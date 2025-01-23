@@ -1,4 +1,4 @@
-# Immigration Consultation Chatbot
+# Canada Immigration Consultation Chatbot
 
 Run the FastAPI app
 
