@@ -14,6 +14,7 @@
 <b><i>1. Clone the repository: </i></b>
 
 ```
+git clone https://github.com/Curry091104/immigration-consultant-capstone.git
 ```
 
 <b><i>2. Install dependencies: </i></b>
