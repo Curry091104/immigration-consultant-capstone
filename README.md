@@ -1,9 +1,33 @@
 # Canada Immigration Consultation Chatbot
-<b>Introduction</b>
-<b>Run the FastAPI app</b>
 
+## Table of Contents
+- [Project Description](#project-description)
+- [Installation](#installation)
+- [Usage](#usage)
+- [Contributors](#contributors)
+- [License](#license)
+
+
+### Project Description
+
+### Installation
+<b><i>1. Clone the repository: </i></b>
+
+```
+```
+
+<b><i>2. Install dependencies: </i></b>
+
+```
+```
+
+### Usage
+To run the project, use the following command:
 ```
 uvicorn app:app --reload
 ```
 
-<b>Authors</b>
+### Contributors
+
+### License
+This project is licensed under the [MIT License](LICENSE)
