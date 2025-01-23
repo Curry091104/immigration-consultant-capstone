@@ -1,6 +1,6 @@
 # Canada Immigration Consultation Chatbot
 
-Run the FastAPI app
+<b>Run the FastAPI app</b>
 
 ```
 uvicorn app:app --reload
