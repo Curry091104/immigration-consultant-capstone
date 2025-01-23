@@ -5,3 +5,5 @@ Run the FastAPI app
 ```
 uvicorn app:app --reload
 ```
+
+<b>Authors</b>
