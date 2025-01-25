@@ -1,11 +1,13 @@
 # Canada Immigration Consultation Chatbot
 
 ## Table of Contents
-- [Project Description](#project-description)
-- [Installation](#installation)
-- [Usage](#usage)
-- [Contributors](#contributors)
-- [License](#license)
+- [Canada Immigration Consultation Chatbot](#canada-immigration-consultation-chatbot)
+  - [Table of Contents](#table-of-contents)
+    - [Project Description](#project-description)
+    - [Installation](#installation)
+    - [Usage](#usage)
+    - [Contributors](#contributors)
+    - [License](#license)
 
 
 ### Project Description
@@ -20,6 +22,7 @@ git clone https://github.com/Curry091104/immigration-consultant-capstone.git
 <b><i>2. Install dependencies: </i></b>
 
 ```
+pip install -r requirements.txt
 ```
 
 ### Usage
