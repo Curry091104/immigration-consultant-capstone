@@ -40,15 +40,17 @@ class MyPinecone:
         self.doc_store = PineconeVectorStore.from_documents(docs, self.embedding_model, index_name = index_name)
         return JSONResponse({'message': f"Data inserted into index {index_name}"}, status_code=201)
     
-    def search(self, index_name, query, top_k=5, include_values=False, include_metadata=False):
+    def search(self, index_name, query, top_k=5, filter = None, include_values=False, include_metadata=False):
         if index_name not in self.list_index_names():
             return JSONResponse({'message': f"Index {index_name} does not exist"}, status_code=400)
         
         index = self.pinecone_client.Index(index_name)
         query_vector = self.embedding_model.embed_query(query)
         
-        
-        results = index.query(vector=query_vector, top_k=top_k, include_values=include_values, include_metadata=include_metadata)
+        if filter is not None:
+            results = index.query(vector=query_vector, top_k=top_k, include_values=include_values, include_metadata=include_metadata, filter=filter)
+        else:
+            results = index.query(vector=query_vector, top_k=top_k, include_values=include_values, include_metadata=include_metadata)
         results = results.to_dict()
         return JSONResponse({'message': f"Search results for index {index_name}", 'results': results}, status_code=200)
     
