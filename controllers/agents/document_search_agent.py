@@ -29,11 +29,11 @@ class DocumentSearchAgent:
         if answers:
             return answers
         else:
-            return "Answers not found. Ask user to more specific questions or rephrase the question."
+            return "Answer not found"
             
         
     def combine_matches(self, filtered_answers):
-        if filtered_answers != "Answers not found. Ask user to more specific questions or rephrase the question.":
+        if filtered_answers != "Answer not found":
             combined_answers = {}
             combined_hyperlinks = []
             combined_text = ""
@@ -55,14 +55,16 @@ class DocumentSearchAgent:
             return combined_answers
         else:
             return filtered_answers
-        
+      
     def get_answers(self,query, index_name = "studypermit-pgwp-visa", top_k=5, filter = None, include_values=False, include_metadata=True):
         found_docs = self.find_documents(query, index_name, top_k, filter, include_values, include_metadata)
         filtered_answers = self.filter_answers(found_docs)
         combined_answers = self.combine_matches(filtered_answers)
         return combined_answers
     
-query = "Check if I am eligible for study permit in Canada"
+    
 dsa = DocumentSearchAgent()
-answers = dsa.get_answers(query)
-print(answers)
+
+query = "How do I apply for a study permit in Canada?"
+answer = dsa.get_answers(query, index_name="test-index")
+print(answer)
