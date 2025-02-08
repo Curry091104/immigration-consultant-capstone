@@ -12,14 +12,14 @@ class GraphState(TypedDict):
     sender: str
     receiver: str
     question: str
-    generation: str
+    generation: Optional[str]
     documents: Optional[Document]
-    crs_links: List[str]
-    cross_check_needed: bool
-    is_crs: bool
-    is_sp_pgwp: bool
-    revised_needed: bool
-    revised_message: str
+    crs_links: Optional[List[str]]
+    cross_check_needed: Optional[bool]
+    is_crs: Optional[bool]
+    is_sp_pgwp: Optional[bool]
+    revised_needed: Optional[bool]
+    revised_message: Optional[str]
     request_user: Optional[str]
 
 def rag_retrieval(state):
