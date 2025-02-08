@@ -697,35 +697,33 @@ def finalize_document(hyperlinks, docs, ref_link):
     return docs
 
 
-def data_preprocessing(pdf_path, skip_tags=None, category=None):
-    headers, footers, ref_link = detect_headers_and_footers(pdf_path)
-    hyperlinks = extract_hyperlinks(pdf_path)
-    sections = detect_section_with_content(pdf_path, skip_tags=skip_tags, category=category, header=headers, footers=footers)
-    sections = split_subsections(sections)
-    sections = combine_tbl_content(sections, pdf_path)
-    docs = finalize_document(hyperlinks, sections, ref_link)
-    return docs
+# def data_preprocessing(pdf_path, skip_tags=None, category=None):
+#     headers, footers, ref_link = detect_headers_and_footers(pdf_path)
+#     hyperlinks = extract_hyperlinks(pdf_path)
+#     sections = detect_section_with_content(pdf_path, skip_tags=skip_tags, category=category, header=headers, footers=footers)
+#     sections = split_subsections(sections)
+#     sections = combine_tbl_content(sections, pdf_path)
+#     docs = finalize_document(hyperlinks, sections, ref_link)
+#     return docs
 
 
-pdf_path = "D:\Centennial College Materials\SIXTH SEMESTER\COMP 385 - AI CAPSTONE PROJECT\PROJECT\Coding\immigration-consultant-capstone\exploration\data\other.pdf"
-print(data_preprocessing(pdf_path, skip_tags=["Study permit: Get the right documents"]))
+# pdf_path = "D:\Centennial College Materials\SIXTH SEMESTER\COMP 385 - AI CAPSTONE PROJECT\PROJECT\Coding\immigration-consultant-capstone\exploration\data\other.pdf"
+# print(data_preprocessing(pdf_path, skip_tags=["Study permit: Get the right documents"]))
 
 
 #! This function will be used after app admin has reviewed the processed data
-# def convert_to_langchain_docformat(docs, ofc_doc_id):
-#     final_docs = []
-#     for doc in docs:
-#         final_doc = Document(
-#             page_content=doc['content'],
-#             metadata={
-#                 'ofc_doc_id': ofc_doc_id,
-#                 'tags': doc['tags'],
-#                 'text': doc['content'],
-#                 'hyperlinks': doc['hyperlinks'],
-#                 'ref_link': doc['ref_link']
-#             }
-#         )
-#         final_docs.append(final_doc)
-#     return final_docs
-
-
+def convert_to_langchain_docformat(docs, ofc_doc_id):
+    final_docs = []
+    for doc in docs:
+        final_doc = Document(
+            page_content=doc['content'],
+            metadata={
+                'ofc_doc_id': ofc_doc_id,
+                'tags': doc['tags'],
+                'text': doc['content'],
+                'hyperlinks': doc['hyperlinks'],
+                'ref_link': doc['ref_link']
+            }
+        )
+        final_docs.append(final_doc)
+    return final_docs
