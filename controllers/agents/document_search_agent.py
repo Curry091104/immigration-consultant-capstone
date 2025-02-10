@@ -63,8 +63,8 @@ class DocumentSearchAgent:
         return combined_answers
     
     
-dsa = DocumentSearchAgent()
+# dsa = DocumentSearchAgent()
 
-query = "How do I apply for a study permit in Canada?"
-answer = dsa.get_answers(query, index_name="test-index")
-print(answer)
+# query = "How do I apply for a study permit in Canada?"
+# answer = dsa.get_answers(query, index_name="test-index")
+# print(answer)

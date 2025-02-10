@@ -727,3 +727,19 @@ def convert_to_langchain_docformat(docs, ofc_doc_id):
         )
         final_docs.append(final_doc)
     return final_docs
+
+def convert_faq_to_langchain_docformat(faq_docs):
+    final_faq_docs = []
+    for faq_doc in faq_docs:
+        final_faq_doc = Document(
+            page_content=faq_doc['question'],
+            metadata={
+                "tags": faq_doc['tags'],
+                "faq_id": faq_doc['faq_id'],
+                "question": faq_doc['question'],
+                "answer": faq_doc['answer'],
+                "hyperlinks": faq_doc['hyperlinks'],
+            }
+        )
+        final_faq_docs.append(final_faq_doc)
+    return final_faq_docs
