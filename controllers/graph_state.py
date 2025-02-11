@@ -1,24 +1,32 @@
 from typing import TypedDict, List, Optional
+import os
 from langgraph.graph import StateGraph, END, START
 from agents.document_search_agent import DocumentSearchAgent
 from agents.conversational_agent import ConversationAgent
 from agents.faq_agent import FAQAgent
 from agents.cross_check_agent import CrossCheckAgent
-from langchain.schema import HumanMessage
+from agents.decision_agent import DecisionAgent
+from langchain.schema import HumanMessage, AIMessage
 from langchain.schema import Document
 from langgraph.checkpoint.memory import MemorySaver
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
+import langsmith as ls
 from io import BytesIO
 import asyncio
 import warnings
 warnings.filterwarnings("ignore")
 
+LANGSMITH_API_KEY = os.getenv("LANGSMITH_API_KEY")
+LANGSMITH_ENDPOINT = os.getenv("LANGSMITH_ENDPOINT")
+
 memory = MemorySaver()
+langsmith_client = ls.Client(api_url=LANGSMITH_ENDPOINT, api_key=LANGSMITH_API_KEY)
 conv_agent = ConversationAgent()
 document_search_agent = DocumentSearchAgent()
 faq_agent = FAQAgent()
 cross_check_agent = CrossCheckAgent()
+dec_agent = DecisionAgent()
 
 class GraphState(TypedDict):
     sender: Optional[str]
@@ -33,11 +41,12 @@ class GraphState(TypedDict):
     category: Optional[str]
     
     
-    
-async def conversation_agent(state):
+@ls.traceable(langsmith_client, name="conversation_agent")
+async def conversation_agent(state, **kwargs):
     print("Conversation Agent")
     question = state['question']
     sender = state['sender']
+    category = state.get('category', None)
     if sender not in ['document_search_agent', 'faq_agent', 'cross_check_agent']:
         response = await conv_agent.handle_request(question)
         if response[1] != "general":
@@ -68,7 +77,7 @@ async def conversation_agent(state):
             return {
                 'question': question, 
                 'sender': 'conversation_agent',
-                'receiver': 'faq_agent' # Decision Agent
+                'receiver': 'decision_agent',
             }
     elif sender == 'document_search_agent':
         cross_check_needed = state['cross_check_needed']
@@ -78,6 +87,7 @@ async def conversation_agent(state):
                 'question': question, 
                 'generation': state['generation'],
                 'documents': state['documents'],
+                'category': category,
                 'sender': 'conversation_agent',
                 'receiver': 'cross_check_agent'
             }
@@ -87,6 +97,7 @@ async def conversation_agent(state):
             return {
                 'question': question, 
                 'generation': state['generation'],
+                'category': category,
                 'sender': 'conversation_agent',
                 'receiver': '_end_',
             }
@@ -97,6 +108,7 @@ async def conversation_agent(state):
             'question': question, 
             'generation': state['generation'],
             'documents': state['documents'],
+            'category': category,
             'sender': 'conversation_agent',
             'receiver': 'cross_check_agent'
         }
@@ -106,20 +118,42 @@ async def conversation_agent(state):
         return {
             'question': question, 
             'generation': state['generation'],
+            'category': category,
             'sender': 'conversation_agent',
             'receiver': '_end_',
         }
 
-        
+@ls.traceable(langsmith_client, name="decision_agent")
+def decision_agent(state, **kwargs):
+    print("Decision Agent")
+    question = state['question']
+    category, is_sp_pgwp_visa = dec_agent.is_the_query_related_to_study_permit_pgwp_or_visa(question)
+    if is_sp_pgwp_visa:
+        return {
+            'question': question,
+            'category': category,
+            'sender': 'decision_agent',
+            'receiver': 'faq_agent'
+        }
+    else:
+        return {
+            'question': question,
+            'category': category,
+            'sender': 'decision_agent',
+            'receiver': '' #CRS Agent
+        }
 
-def rag_retrieval(state):
+@ls.traceable(langsmith_client, name="document_search_agent")
+def rag_retrieval(state, **kwargs):
     print("RAG Retrieval")
     question = state['question']
+    category = state['category']
     documents = None
     answer = document_search_agent.get_answers(question)
     if answer == "Not found":
         return {
             'question': question,
+            'category': category,
             'cross_check_needed': False,
             'sender': 'document_search_agent',
             'receiver': 'conversation_agent',
@@ -135,20 +169,23 @@ def rag_retrieval(state):
         )
         return {
             'question': question, 
+            'category': category,
             'documents': documents, 
             'sender': 'document_search_agent', 
             'receiver': 'conversation_agent',
             'cross_check_needed': True
         }
 
-
-def faq_retrieval(state):
+@ls.traceable(langsmith_client, name="faq_agent")
+def faq_retrieval(state, **kwargs):
     print("FAQ Retrieval")
     question = state['question']
+    category = state['category']
     answer = faq_agent.get_answer(question)
     if answer == "Not found":
         return {
-            'question': question, 
+            'question': question,
+            'category': category,
             'documents': [], 
             'sender': 'faq_agent',
             'receiver': 'document_search_agent',
@@ -162,21 +199,26 @@ def faq_retrieval(state):
             }
         )
         return {
-            'question': question, 
+            'question': question,
+            'category': category,
             'documents': documents, 
             'sender': 'faq_agent',
             'receiver': 'conversation_agent',
         }
     
-def cross_check(state):
+@ls.traceable(langsmith_client, name="cross_check_agent")
+def cross_check(state, **kwargs):
     print("Cross Check")
     question = state['question']
+    category = state['category']
     generation = state['generation']
     documents = state['documents']
     similarity_score = cross_check_agent.cross_check(generation, documents)
     if similarity_score > 0.75:
         return {
-            'generation': generation, 
+            'question': question,
+            'generation': generation,
+            'category': category,
             'sender': 'cross_check_agent',
             'receiver': '_end_',
         }
@@ -184,7 +226,8 @@ def cross_check(state):
         revised_message = "The generated answer is not similar to the retrieved documents. Please revise the answer that matches the retrieved documents closely."
         return {
             'question': question, 
-            'documents': documents, 
+            'documents': documents,
+            'category': category,
             'revised_message': revised_message,
             'sender': 'cross_check_agent',
             'receiver': 'conversation_agent'
@@ -198,6 +241,7 @@ immigration_graph.add_node("conversation_agent", conversation_agent)
 immigration_graph.add_node("document_search_agent", rag_retrieval)
 immigration_graph.add_node("faq_agent", faq_retrieval)
 immigration_graph.add_node("cross_check_agent", cross_check)
+immigration_graph.add_node("decision_agent", decision_agent)
 
 # Build the graph
 immigration_graph.add_edge(START, "conversation_agent")
@@ -205,9 +249,18 @@ immigration_graph.add_conditional_edges(
     "conversation_agent",
     lambda state: state['receiver'],
     {
-        "faq_agent": "faq_agent",
+        "decision_agent": "decision_agent",
         "cross_check_agent": "cross_check_agent",
         '_end_': END
+    }
+)
+
+immigration_graph.add_conditional_edges(
+    "decision_agent",
+    lambda state: state['receiver'],
+    {
+        "faq_agent": "faq_agent",
+        'document_search_agent': "document_search_agent" #CRS Agent - temporary
     }
 )
 
@@ -225,9 +278,22 @@ immigration_graph.add_edge("document_search_agent", "conversation_agent")
 immigration_graph.add_edge("cross_check_agent", END)
 
 
-
 agents = immigration_graph.compile(checkpointer=memory)
-config = {"configurable": {"thread_id": "4"}}
+
+# #Get image bytes from the graph
+# img_bytes = agents.get_graph().draw_mermaid_png()
+
+# # Convert bytes to an image
+# img = mpimg.imread(BytesIO(img_bytes), format="png")
+
+# # Display the image
+# plt.figure(figsize=(10, 6))
+# plt.imshow(img)
+# plt.title("Multi-agent collaboration graph", fontsize=20)
+# plt.axis("off")  # Hide axes
+# plt.show()
+
+config = {"configurable": {"thread_id": "1"}} # Add thread_id to the config, must be unique for each conversation
 inputs = {}
 
 async def main():
@@ -246,18 +312,3 @@ async def main():
             break
 
 asyncio.run(main())
-
-
-
-
-#Get image bytes from the graph
-# img_bytes = agents.get_graph().draw_mermaid_png()
-
-# # Convert bytes to an image
-# img = mpimg.imread(BytesIO(img_bytes), format="png")
-
-# # Display the image
-# plt.figure(figsize=(10, 6))
-# plt.imshow(img)
-# plt.axis("off")  # Hide axes
-# plt.show()

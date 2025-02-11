@@ -30,7 +30,6 @@ class ConversationAgent:
         if len(self.history) > 5:
             self.history.pop(0)
         
-        print("History:", self.history)
         
 
     def classify_inquiry_for_decision(self, user_input):
@@ -145,7 +144,7 @@ class ConversationAgent:
         The Inquiry is always a question from the user.
         Revised Inquiry: <Revised Inquiry ONLY ONLY> *** Revised Inquiry MUST be different from the original inquiry*** Return "None" if the inquiry is not revised
         Do not add any additional content or reason to the revised inquiry section.
-        Do not include The Inquiry is: <New User Inquiry> under Revised Inquiry.
+        PLase Do Not include "The Inquiry is: <New User Inquiry>" under Revised Inquiry!
         Reason: <Brief explanation why the inquiry was revised or not> even if the inquiry is not revised.
         """
 
