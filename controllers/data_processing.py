@@ -231,7 +231,7 @@ def detect_section_with_content(pdf_path, skip_tags=None, category=None, txt_rem
                             if current_subsection in subsection_indexes:
                                 sections_with_content[section_index]['subsections'][subsection_indexes[current_subsection]]['content'] = subsection_content
                             else:
-                                if current_subsection not in skip_tags:  # Skip subsection if in skip_tags
+                                if current_subsection not in skip_tags and current_subsection != "On this page" and current_subsection != "On this page:":
                                     sections_with_content[section_index]['subsections'].append({
                                         'content': subsection_content
                                     })
@@ -269,7 +269,7 @@ def detect_section_with_content(pdf_path, skip_tags=None, category=None, txt_rem
                         if current_subsection in subsection_indexes:
                             sections_with_content[section_index]['subsections'][subsection_indexes[current_subsection]]['content'] = subsection_content
                         else:
-                            if current_subsection not in skip_tags:  # Skip subsection if in skip_tags
+                            if current_subsection not in skip_tags and current_subsection != "On this page" and current_subsection != "On this page:":  # Skip subsection if in skip_tags
                                 sections_with_content[section_index]['subsections'].append({
                                     'content': subsection_content
                                 })
@@ -365,7 +365,7 @@ def detect_section_with_content(pdf_path, skip_tags=None, category=None, txt_rem
                                     if current_subsection in subsection_indexes:
                                         sections_with_content[section_index]['subsections'][subsection_indexes[current_subsection]]['content'] = subsection_content
                                     else:
-                                        if current_subsection not in skip_tags:
+                                        if current_subsection not in skip_tags and current_subsection != "On this page" and current_subsection != "On this page:":
                                             sections_with_content[section_index]['subsections'].append({
                                                 'content': subsection_content
                                             })
@@ -499,7 +499,7 @@ def detect_section_with_content(pdf_path, skip_tags=None, category=None, txt_rem
                                         if current_subsection in subsection_indexes:
                                             sections_with_content[section_index]['subsections'][subsection_indexes[current_subsection]]['content'] = subsection_content
                                         else:
-                                            if current_subsection not in skip_tags:
+                                            if current_subsection not in skip_tags and current_subsection != "On this page" and current_subsection != "On this page:":
                                                 sections_with_content[section_index]['subsections'].append({
                                                     'content': subsection_content
                                                 })
