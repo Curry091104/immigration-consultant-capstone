@@ -127,7 +127,8 @@ async def conversation_agent(state, **kwargs):
 def decision_agent(state, **kwargs):
     print("Decision Agent")
     question = state['question']
-    category, is_sp_pgwp_visa = dec_agent.is_the_query_related_to_study_permit_pgwp_or_visa(question)
+    category = dec_agent.classify_question(question)
+    is_sp_pgwp_visa = dec_agent.is_the_query_related_to_study_permit_pgwp_or_visa(question)
     if is_sp_pgwp_visa:
         return {
             'question': question,

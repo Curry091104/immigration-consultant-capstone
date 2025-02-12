@@ -3,8 +3,6 @@ import sys
 
 sys.path.append(os.path.join(os.getcwd()))
 
-print(os.path.join(os.getcwd()))
-
 from tools.clean_text_lv2 import clean_content_Level2
 from langchain.schema import Document
 import re
@@ -38,7 +36,7 @@ def clean_content(content, txt_removed=None, header=None, footers=None):
     content = re.sub(r'\n', ' ', content)            # Replace newlines with spaces
     content = re.sub(r'Date modified: \d\d\d\d-\d\d-\d\d', '', content)  # Remove date modified
     
-    if txt_removed is not None:
+    if txt_removed:
         for txt in txt_removed:
             content = content.replace(txt, '')
 
@@ -146,7 +144,7 @@ def best_matching_table(line_bbox, table_bboxes):
     return best_index        
 
 
-def detect_section_with_content(pdf_path, skip_tags=None, category=None, header=None, footers=None):
+def detect_section_with_content(pdf_path, skip_tags=None, category=None, txt_removed = None, header=None, footers=None):
     if skip_tags is None:
         skip_tags = []
     else:
@@ -229,7 +227,7 @@ def detect_section_with_content(pdf_path, skip_tags=None, category=None, header=
                             subsection_indexes = {}
                     elif line['chars'][0]['fontname'].find("Lato-Bold") and SUBSECTION_MIN_SIZE <= line['chars'][0]['size'] < SUBSECTION_MAX_SIZE:
                         if current_subsection and current_content:
-                            subsection_content = current_subsection + ": " + clean_content(' '.join(current_content).strip(), header=header, footers=footers)
+                            subsection_content = current_subsection + ": " + clean_content(' '.join(current_content).strip(), header=header, footers=footers, txt_removed=txt_removed)
                             if current_subsection in subsection_indexes:
                                 sections_with_content[section_index]['subsections'][subsection_indexes[current_subsection]]['content'] = subsection_content
                             else:
@@ -267,7 +265,7 @@ def detect_section_with_content(pdf_path, skip_tags=None, category=None, header=
                     
                         
                     if current_subsection and current_content:
-                        subsection_content = current_subsection + ": " + clean_content(' '.join(current_content).strip(), header=header, footers=footers)
+                        subsection_content = current_subsection + ": " + clean_content(' '.join(current_content).strip(), header=header, footers=footers, txt_removed=txt_removed)
                         if current_subsection in subsection_indexes:
                             sections_with_content[section_index]['subsections'][subsection_indexes[current_subsection]]['content'] = subsection_content
                         else:
@@ -277,13 +275,13 @@ def detect_section_with_content(pdf_path, skip_tags=None, category=None, header=
                                 })
                                 subsection_indexes[current_subsection] = len(sections_with_content[section_index]['subsections']) - 1   
                     elif current_section and current_content:
-                        sections_with_content[-1]['content'] = clean_content(' '.join(current_content).strip(), header=header, footers=footers)
+                        sections_with_content[-1]['content'] = clean_content(' '.join(current_content).strip(), header=header, footers=footers, txt_removed=txt_removed)
                         
                     
                     # handle no section
                     if not any(is_section) and current_content:
                         current_section = "Other Resources"
-                        clean_content_str = clean_content(' '.join(current_content).strip(), header=header, footers=footers)
+                        clean_content_str = clean_content(' '.join(current_content).strip(), header=header, footers=footers, txt_removed=txt_removed)
 
                         # Check if "Other Resources" already exists in sections_with_content
                         existing_section = next((section for section in sections_with_content if section['section'] == current_section), None)
@@ -363,7 +361,7 @@ def detect_section_with_content(pdf_path, skip_tags=None, category=None, header=
                             # Check if line is a subsection
                             elif line['chars'][0]['fontname'].find("Lato-Bold") and SUBSECTION_MIN_SIZE <= line['chars'][0]['size'] < SUBSECTION_MAX_SIZE:
                                 if current_subsection and current_content:
-                                    subsection_content = current_subsection + ": " + clean_content(' '.join(current_content).strip(), header=header, footers=footers)
+                                    subsection_content = current_subsection + ": " + clean_content(' '.join(current_content).strip(), header=header, footers=footers, txt_removed=txt_removed)
                                     if current_subsection in subsection_indexes:
                                         sections_with_content[section_index]['subsections'][subsection_indexes[current_subsection]]['content'] = subsection_content
                                     else:
@@ -399,7 +397,7 @@ def detect_section_with_content(pdf_path, skip_tags=None, category=None, header=
                             elif current_subsection != "On this page" or current_subsection != "On this page:":
                                 current_content.append(text)
                         if current_subsection and current_content:
-                            subsection_content = current_subsection + ": " + clean_content(' '.join(current_content).strip(), header=header, footers=footers)
+                            subsection_content = current_subsection + ": " + clean_content(' '.join(current_content).strip(), header=header, footers=footers, txt_removed=txt_removed)
                             if current_subsection in subsection_indexes:
                                 sections_with_content[section_index]['subsections'][subsection_indexes[current_subsection]]['content'] = subsection_content
                             else:
@@ -409,11 +407,11 @@ def detect_section_with_content(pdf_path, skip_tags=None, category=None, header=
                                     })
                                     subsection_indexes[current_subsection] = len(sections_with_content[section_index]['subsections']) - 1
                         elif current_section and current_content:
-                            sections_with_content[-1]['content'] = clean_content(' '.join(current_content).strip(), header=header, footers=footers)
+                            sections_with_content[-1]['content'] = clean_content(' '.join(current_content).strip(), header=header, footers=footers, txt_removed=txt_removed)
                             
                     if not any(is_section) and current_content:
                         current_section = "Other Resources"
-                        clean_content_str = clean_content(' '.join(current_content).strip(), header=header, footers=footers)
+                        clean_content_str = clean_content(' '.join(current_content).strip(), header=header, footers=footers, txt_removed=txt_removed)
 
                         # Check if "Other Resources" already exists in sections_with_content
                         existing_section = next((section for section in sections_with_content if section['section'] == current_section), None)
@@ -497,7 +495,7 @@ def detect_section_with_content(pdf_path, skip_tags=None, category=None, header=
                                         subsection_indexes = {}
                                 elif line['chars'][0]['fontname'].find("Lato-Bold") and SUBSECTION_MIN_SIZE <= line['chars'][0]['size'] < SUBSECTION_MAX_SIZE:
                                     if current_subsection and current_content:
-                                        subsection_content = current_subsection + ": " + clean_content(' '.join(current_content).strip(), header=header, footers=footers)
+                                        subsection_content = current_subsection + ": " + clean_content(' '.join(current_content).strip(), header=header, footers=footers, txt_removed=txt_removed)
                                         if current_subsection in subsection_indexes:
                                             sections_with_content[section_index]['subsections'][subsection_indexes[current_subsection]]['content'] = subsection_content
                                         else:
@@ -533,7 +531,7 @@ def detect_section_with_content(pdf_path, skip_tags=None, category=None, header=
                                 elif current_subsection != "On this page" or current_subsection != "On this page:":
                                     current_content.append(text)
                             if current_subsection and current_content:
-                                subsection_content = current_subsection + ": " + clean_content(' '.join(current_content).strip(), header=header, footers=footers)
+                                subsection_content = current_subsection + ": " + clean_content(' '.join(current_content).strip(), header=header, footers=footers, txt_removed=txt_removed)
                                 if current_subsection in subsection_indexes:
                                     sections_with_content[section_index]['subsections'][subsection_indexes[current_subsection]]['content'] = subsection_content
                                 else:
@@ -543,7 +541,7 @@ def detect_section_with_content(pdf_path, skip_tags=None, category=None, header=
                                         })
                                         subsection_indexes[current_subsection] = len(sections_with_content[section_index]['subsections']) - 1
                             elif current_section and current_content:
-                                sections_with_content[-1]['content'] = clean_content(' '.join(current_content).strip(), header=header, footers=footers)
+                                sections_with_content[-1]['content'] = clean_content(' '.join(current_content).strip(), header=header, footers=footers, txt_removed=txt_removed)
 
                         else:
                             # Check the line_bbox against the table bboxes then get the index of the table bbox
@@ -571,7 +569,7 @@ def detect_section_with_content(pdf_path, skip_tags=None, category=None, header=
                     
                     if not any(is_section) and current_content:
                         current_section = "Other Resources"
-                        clean_content_str = clean_content(' '.join(current_content).strip(), header=header, footers=footers)
+                        clean_content_str = clean_content(' '.join(current_content).strip(), header=header, footers=footers, txt_removed=txt_removed)
 
                         # Check if "Other Resources" already exists in sections_with_content
                         existing_section = next((section for section in sections_with_content if section['section'] == current_section), None)
@@ -674,7 +672,7 @@ def filter_hyperlinks(hyperlinks, doc):
 
     # Apply cleaning after combining
     for uri, content in combined_hyperlinks.items():
-        combined_hyperlinks[uri]['text'] = clean_content(content['text'])
+        combined_hyperlinks[uri]['text'] = clean_content(content['text'], txt_removed=None)
         
     final_filtered_hyperlinks = []
     for uri, content in combined_hyperlinks.items():
@@ -697,18 +695,14 @@ def finalize_document(hyperlinks, docs, ref_link):
     return docs
 
 
-# def data_preprocessing(pdf_path, skip_tags=None, category=None):
-#     headers, footers, ref_link = detect_headers_and_footers(pdf_path)
-#     hyperlinks = extract_hyperlinks(pdf_path)
-#     sections = detect_section_with_content(pdf_path, skip_tags=skip_tags, category=category, header=headers, footers=footers)
-#     sections = split_subsections(sections)
-#     sections = combine_tbl_content(sections, pdf_path)
-#     docs = finalize_document(hyperlinks, sections, ref_link)
-#     return docs
-
-
-# pdf_path = "D:\Centennial College Materials\SIXTH SEMESTER\COMP 385 - AI CAPSTONE PROJECT\PROJECT\Coding\immigration-consultant-capstone\exploration\data\other.pdf"
-# print(data_preprocessing(pdf_path, skip_tags=["Study permit: Get the right documents"]))
+def data_preprocessing(pdf_path, skip_tags=None, category=None, txt_removed=None):
+    headers, footers, ref_link = detect_headers_and_footers(pdf_path)
+    hyperlinks = extract_hyperlinks(pdf_path)
+    sections = detect_section_with_content(pdf_path, skip_tags=skip_tags, category=category, header=headers, footers=footers, txt_removed=txt_removed)
+    sections = split_subsections(sections)
+    sections = combine_tbl_content(sections, pdf_path)
+    docs = finalize_document(hyperlinks, sections, ref_link)
+    return docs
 
 
 #! This function will be used after app admin has reviewed the processed data

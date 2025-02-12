@@ -3,3 +3,4 @@ venv
 __pycache__
 exploration
 local
+data
