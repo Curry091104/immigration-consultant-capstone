@@ -193,10 +193,9 @@ def faq_retrieval(state, **kwargs):
         }
     else:
         documents = Document(
-            page_content=answer.get('text', ''),
+            page_content=answer.get('answer', ''),  
             metadata={
-                'hyperlinks': answer.get('hyperlinks', []),
-                'reference': answer.get('ref_link', '')
+                'hyperlinks': answer.get('hyperlinks', [])
             }
         )
         return {
