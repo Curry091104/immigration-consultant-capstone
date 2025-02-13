@@ -187,5 +187,5 @@ class ConversationAgent:
     def handle_document_search_request(self, document_response):
         pass
     
-    def handle_cross_agent_request(self, user_input):
+    def handle_cross_agent_request(self, cross_check_request):
         pass
