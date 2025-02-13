@@ -13,7 +13,7 @@ load_dotenv()
 class ConversationAgent:
     """Main agent responsible for handling multi-agent communication."""
 
-    def __init__(self, max_tokens=512, temperature=0.5): # max_tokens = 512, temperature = 0.5, top_k = 1, top_p = 0.9, frequency_penalty = 0.0, presence_penalty = 0.0
+    def __init__(self, max_tokens=1028, temperature=0.5): # max_tokens = 512, temperature = 0.5, top_k = 1, top_p = 0.9, frequency_penalty = 0.0, presence_penalty = 0.0
         # Initialize the LLM Model
         self.model_name = "mistralai/Mistral-7B-Instruct-v0.2" # "meta-llama/Meta-Llama-3-8B-Instruct"
         self.llm = HuggingFaceEndpoint(
@@ -48,6 +48,7 @@ class ConversationAgent:
         1️⃣ Any inquiry mentioning **IRCC** must **ALWAYS** be classified as **'decision_agent'**.
         2️⃣ Any inquiry mentioning **CRS score, CRS ranking, Express Entry** must **ALWAYS** be classified as **'decision_agent'**.
         3️⃣ If the inquiry is **clearly not related to immigration**, classify it as **'general'**.
+        4️⃣ If the user asks a question that is not related to immigration, do not answer it and classify it as **'general'**.
 
         **User Inquiry:**  
         {user_input}
