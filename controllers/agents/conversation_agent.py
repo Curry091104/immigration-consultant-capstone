@@ -39,8 +39,13 @@ class ConversationAgent:
         Uses the LLM to classify the user's inquiry into either 'general' or 'decision_agent'.
         Also prints the LLM's reasoning for debugging.
         """
+        
+        history_text = "\n".join(
+            [f"**User:** {msg['user']}" for msg in self.history]
+        )
+        
         classification_prompt = f"""
-        You are an intelligent assistant that classifies user inquiries into two categories:
+        You are an intelligent and helpful assistant that classifies user inquiries into two categories:
         - 'general': Basic questions not related to immigration, such as greetings, general knowledge, or unrelated topics.
         - 'decision_agent': Questions about immigration, student visas, permits, IRCC, CRS score, CRS ranking, Express Entry, or any topic requiring immigration-related decision-making.
 
@@ -50,20 +55,43 @@ class ConversationAgent:
         3️⃣ If the inquiry is **clearly not related to immigration**, classify it as **'general'**.
         4️⃣ If the user asks a question that is not related to immigration, do not answer it and classify it as **'general'**.
 
-        **User Inquiry:**  
+        ### **Conversation Revision Rules**
+        You consider previous conversations to revise ambiguous follow-up questions if they are missing keywords, but still relevant to previous messages.
+        Basic questions not related to immigration, such as greetings, general knowledge, or unrelated topics, do not require any revision.
+        If the inquiry is **related to IRCC, CRS score, CRS ranking, Express Entry**, but the keyword is missing, revise the inquiry to include the keyword.
+        You must not answer any inquiry directly.
+        ONLY revise the inquiry, DO NOT add any additional content or reason to the revised inquiry section.
+        DO NOT REPEAT the inquiry in the revised inquiry section if it is not revised.
+
+        **Conversation History:**
+        {history_text}
+
+        **New User Inquiry:**
         {user_input}
 
-        Return the classification in the exact format below:
+        **Classification and Revision:**
+        If the inquiry is **clearly not related to immigration**, respond with "None" and do not include the inquiry again. 
+        If the inquiry is **related to IRCC, CRS score, CRS ranking, Express Entry**, and is missing the relevant keyword, revise it to include the keyword.
 
-
+        Return the classification and revision in the exact format below:
+        
         Inquiry: {user_input}
-
-        Return the response in the following format:
         ```
         Category: <general or decision_agent>
         Reason: <Brief explanation why this category was chosen>
+        Revised Inquiry: <Revised Inquiry ONLY> *** Revised Inquiry MUST be different from the original inquiry*** Return "None" if the inquiry is not revised
+        Reason for Revision: <Brief explanation why the inquiry was revised or not> even if the inquiry is not revised.
         ```
+        
+        PLEASE DO NOT add any additional content or reason to the revised inquiry section.
+        For example:
+        - Previous Inquiry: "What is the CRS score?"
+        - Current Inquiry: "How can I calculate it?", then it needs to be revised to "How can I calculate the CRS score?"
+        - If user asks "How can I calculate the CRS score?" then it does not need to be revised, return "None".
+        Please Do Not include "The Inquiry is: <New User Inquiry>" under Revised Inquiry!
+        Reason: <Brief explanation why the inquiry was revised or not> even if the inquiry is not revised.
         """
+
 
         # Send the classification request to the LLM
         response = self.chat.invoke([HumanMessage(content=classification_prompt)])
@@ -74,24 +102,34 @@ class ConversationAgent:
         # Extract category and reason using string parsing
         category = "general"  # Default in case extraction fails
         reason = "No explanation provided."
+        revised_inquiry = None
+        reason_for_revision = "No explanation provided."
 
         # Try to extract category and reasoning
-        if "Category:" in llm_output and "Reason:" in llm_output:
+        if "Category:" in llm_output and "Reason:" in llm_output and "Revised Inquiry:" in llm_output and "Reason for Revision:" in llm_output:
             try:
-                parts = llm_output.split("Reason:")
-                category = parts[0].replace("Category:", "").strip().lower()
-                reason = parts[1].strip()
+                category_part = llm_output.split("Reason:")[0].strip()
+                category = category_part.split("Category:")[1].strip().lower()
+                reason = llm_output.split("Reason:")[1].split("Revised Inquiry:")[0].strip()
+                revised_inquiry = llm_output.split("Revised Inquiry:")[1].split("Reason for Revision:")[0].strip()
+                reason_for_revision = llm_output.split("Reason for Revision:")[1].strip() 
             except:
                 pass  # If parsing fails, keep defaults
+            
+        if "The Inquiry is:" in revised_inquiry:
+            revised_inquiry = revised_inquiry.split("The Inquiry is:")[1].strip()
 
-        # # Print the classification and reasoning for debugging
-        # print(f"🔹 **Inquiry:** {user_input}")
-        # print(f"✅ **Classified as:** {category}")
-        # print(f"📝 **Reason:** {reason}\n")
+        # Print the classification and reasoning for debugging
+        print(f"🔹 **Inquiry:** {user_input}")
+        print(f"✅ **Classified as:** {category}")
+        print(f"📝 **Reason:** {reason}")
+        print(f"🔍 **Revised Inquiry:** {revised_inquiry}")
+        print(f"📝 **Reason for Revision:** {reason_for_revision}\n")
+        
 
-        return category if category in ["general", "decision_agent"] else "decision_agent"
+        return category if category in ["general", "decision_agent"] else "decision_agent", revised_inquiry
 
-    async def handle_request(self, user_input):
+    async def handle_user_request(self, user_input):
         """
         Handles all tasks:
         1. Language Detection (Only English & French)
@@ -117,73 +155,37 @@ class ConversationAgent:
             user_input = user_input.text
 
         # Step 2: Classify as 'general' or 'decision_agent'
-        inquiry_category = self.classify_inquiry_for_decision(user_input)
-        
-        history_text = "\n".join(
-            [f"**User:** {msg['user']}" for msg in self.history]
-        )
-        
-        
-        #! NEED TO FIX THIS
-        conversation_prompt = f"""
-        You are a helpful assistant that considers previous conversations to revise ambiguous follow-up questions if they are missing keywords, but still relevant to previous messages.
-        Basic questions not related to immigration, such as greetings, general knowledge, or unrelated topics, do not require any revision.
-        If the inquiry is **related to IRCC, CRS score, CRS ranking, Express Entry**, but the keyword is missing, revise the inquiry to include the keyword.
-        You must not answer any inquiry directly.
-        ONLY revise the inquiry, DO NOT add any additional content or reason to the revised inquiry section.
-        DO NOT REPEAT the inquiry in the revised inquiry section if it is not revised.
-
-        **Conversation History:**
-        {history_text}
-
-        **New User Inquiry:**
-        {user_input}
-
-        If the inquiry is **clearly not related to immigration**, respond with "None" and do not include the inquiry again. 
-        If the inquiry is **related to IRCC, CRS score, CRS ranking, Express Entry**, and is missing the relevant keyword, revise it to include the keyword.
-
-        
-        Return the classification in the exact format below:
-        The Inquiry is always a question from the user.
-        Revised Inquiry: <Revised Inquiry ONLY ONLY> *** Revised Inquiry MUST be different from the original inquiry*** Return "None" if the inquiry is not revised
-        PLEASE DO NOT add any additional content or reason to the revised inquiry section.
-        For example:
-        - Previous Inquiry: "What is the CRS score?"
-        - Current Inquiry: "How can I calculate it?", then it needs to be revised to "How can I calculate the CRS score?"
-        - If user asks "How can I calculate the CRS score?" then it does not need to be revised, return "None".
-        PLease Do Not include "The Inquiry is: <New User Inquiry>" under Revised Inquiry!
-        Reason: <Brief explanation why the inquiry was revised or not> even if the inquiry is not revised.
-        """
-
-        
-        response = self.chat.invoke([HumanMessage(content=conversation_prompt)])
-        llm_output = response.content.strip()
-        
-        revised_inquiry = None
-        reason = None
-        
-        if "Revised Inquiry:" in llm_output:
-            try:
-                if "Reason:" in llm_output:
-                    parts = llm_output.split("Reason:")
-                    revised_inquiry = parts[0].replace("Revised Inquiry:", "").strip()
-                    if "The Inquiry is:" in revised_inquiry:
-                        revised_inquiry_parts = revised_inquiry.split("\n")
-                        revised_inquiry = revised_inquiry_parts[1].strip()
-                else:
-                    revised_inquiry = llm_output.replace("Revised Inquiry:", "").strip()
-                    if "The Inquiry is:" in revised_inquiry:
-                        revised_inquiry_parts = revised_inquiry.split("\n")
-                        revised_inquiry = revised_inquiry_parts[1].strip()
-            except:
-                pass
-            
-        # print(f"🔹 **Inquiry:** {user_input}")
-        # print(f"✅ **Revised Inquiry:** {revised_inquiry}")
-        # print(f"📝 **Reason:** {reason}")
+        inquiry_category, revised_inquiry = self.classify_inquiry_for_decision(user_input)
         
         self.update_conversation_history(user_input)
         
         return detected_lang, inquiry_category, user_input, revised_inquiry
     
-    #! Have not checked grammar, ...
+    
+    def handle_faq_request(self, faq_response):
+        """
+        Handles the FAQ response
+        
+        Do not change the original response from the FAQ system.
+        Only change the format of the response to the user.
+        
+        Example:
+        Document(
+            page_content="This is the content of the FAQ response."
+            metadata={
+                "hyperlinks": ["https://www.example.com: content"],
+            }
+        )
+        
+        Change the response to: This is the [https://www.example.com](content) of the FAQ response.
+        """
+        pass
+    
+    def handle_crs_request(self, crs_response):
+        pass
+    
+    def handle_document_search_request(self, document_response):
+        pass
+    
+    def handle_cross_agent_request(self, user_input):
+        pass

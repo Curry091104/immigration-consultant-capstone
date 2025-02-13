@@ -66,5 +66,5 @@ class DocumentSearchAgent:
 # dsa = DocumentSearchAgent()
 
 # query = "How do I apply for a study permit in Canada?"
-# answer = dsa.get_answers(query, index_name="test-index")
+# answer = dsa.get_answers(query)
 # print(answer)

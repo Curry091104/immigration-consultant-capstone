@@ -48,7 +48,7 @@ async def conversation_agent(state, **kwargs):
     sender = state['sender']
     category = state.get('category', None)
     if sender not in ['document_search_agent', 'faq_agent', 'cross_check_agent']:
-        response = await conv_agent.handle_request(question)
+        response = await conv_agent.handle_user_request(question)
         if response[1] != "general":
             if response[0] == "fr" and response[3] == None:
                 question = response[2]
@@ -59,7 +59,8 @@ async def conversation_agent(state, **kwargs):
         
         if response[0] not in ["en", "fr"]:
             return {
-                'question': question,  
+                'question': question,
+                'generation': response[1], 
                 'sender': 'conversation_agent',
                 'receiver': '_end_',
             }
