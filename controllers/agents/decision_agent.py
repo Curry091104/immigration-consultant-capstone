@@ -6,7 +6,7 @@ class DecisionAgent:
         self.path = os.path.dirname(os.path.abspath("__file__"))
         self.dataset_l1_files = ['Visa_l1.csv', 'SP_l1.csv', 'PGWP_l1.csv', 'CRS_l1.csv']
         self.dataset_l2_files = ['Visa_l2.csv', 'SP_l2.csv', 'PGWP_l2.csv', 'CRS_l2.csv']
-        self.classes = {0:"Visa", 1:"Study Permit", 2:"PGWP", 3:"CRS"}
+        self.classes = {0:"visa", 1:"study permit", 2:"pgwp", 3:"crs"}
         self.dataset_l1 = {}
         self.dataset_l2 = {}
         

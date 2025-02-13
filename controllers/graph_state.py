@@ -2,7 +2,7 @@ from typing import TypedDict, List, Optional
 import os
 from langgraph.graph import StateGraph, END, START
 from agents.document_search_agent import DocumentSearchAgent
-from agents.conversational_agent import ConversationAgent
+from controllers.agents.conversation_agent import ConversationAgent
 from agents.faq_agent import FAQAgent
 from agents.cross_check_agent import CrossCheckAgent
 from agents.decision_agent import DecisionAgent
@@ -43,7 +43,7 @@ class GraphState(TypedDict):
     
 @ls.traceable(langsmith_client, name="conversation_agent")
 async def conversation_agent(state, **kwargs):
-    print("Conversation Agent")
+    print("\n############################################ Conversation Agent ############################################\n")
     question = state['question']
     sender = state['sender']
     category = state.get('category', None)
@@ -125,7 +125,7 @@ async def conversation_agent(state, **kwargs):
 
 @ls.traceable(langsmith_client, name="decision_agent")
 def decision_agent(state, **kwargs):
-    print("Decision Agent")
+    print("\n############################################ Decision Agent ############################################\n")
     question = state['question']
     category = dec_agent.classify_question(question)
     is_sp_pgwp_visa = dec_agent.is_the_query_related_to_study_permit_pgwp_or_visa(question)
@@ -146,11 +146,12 @@ def decision_agent(state, **kwargs):
 
 @ls.traceable(langsmith_client, name="document_search_agent")
 def rag_retrieval(state, **kwargs):
-    print("RAG Retrieval")
+    print("\n############################################ Document Search Agent ############################################\n")
     question = state['question']
     category = state['category']
+    # filter_pinecone_search = {"tags": {"$in": [category]}}
     documents = None
-    answer = document_search_agent.get_answers(question)
+    answer = document_search_agent.get_answers(question, filter=None)
     if answer == "Not found":
         return {
             'question': question,
@@ -179,10 +180,11 @@ def rag_retrieval(state, **kwargs):
 
 @ls.traceable(langsmith_client, name="faq_agent")
 def faq_retrieval(state, **kwargs):
-    print("FAQ Retrieval")
+    print("\n############################################ FAQ Agent ############################################\n")
     question = state['question']
     category = state['category']
-    answer = faq_agent.get_answer(question)
+    # filter_pinecone_search = {"tags": {"$in": [category]}}
+    answer = faq_agent.get_answer(question, filter=None)
     if answer == "Not found":
         return {
             'question': question,
@@ -208,7 +210,7 @@ def faq_retrieval(state, **kwargs):
     
 @ls.traceable(langsmith_client, name="cross_check_agent")
 def cross_check(state, **kwargs):
-    print("Cross Check")
+    print("\n############################################ Cross Check Agent ############################################\n")
     question = state['question']
     category = state['category']
     generation = state['generation']
@@ -260,7 +262,7 @@ immigration_graph.add_conditional_edges(
     lambda state: state['receiver'],
     {
         "faq_agent": "faq_agent",
-        'document_search_agent': "document_search_agent" #CRS Agent - temporary
+        # 'crs_agent': "crs_agent"
     }
 )
 
