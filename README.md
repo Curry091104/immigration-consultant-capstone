@@ -32,7 +32,7 @@ pip install -r requirements.txt
 ```
 
 ### Usage
-To run the project, use the following command:
+To run the project, use the following command: </br?
 Frontend
 ```
 cd frontend
