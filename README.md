@@ -19,7 +19,15 @@ git clone https://github.com/Curry091104/immigration-consultant-capstone.git
 
 <b><i>2. Install dependencies: </i></b>
 
+Frontend
 ```
+cd frontend
+pending ...
+```
+
+Backend
+```
+cd backend
 pip install -r requirements.txt
 ```
 
