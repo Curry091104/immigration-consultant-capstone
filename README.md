@@ -1,4 +1,4 @@
-# Canada Immigration Consultation Chatbot
+# Canada Immigration Consultant Chatbot
 
 ## Table of Contents
 - [Project Description](#project-description)
