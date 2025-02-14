@@ -22,7 +22,7 @@ git clone https://github.com/Curry091104/immigration-consultant-capstone.git
 Frontend
 ```
 cd frontend
-pending ...
+*** pending ... ***
 ```
 
 Backend
