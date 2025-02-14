@@ -15,7 +15,7 @@ class ConversationAgent:
 
     def __init__(self, max_tokens=1028, temperature=0.5): # max_tokens = 512, temperature = 0.5, top_k = 1, top_p = 0.9, frequency_penalty = 0.0, presence_penalty = 0.0
         # Initialize the LLM Model
-        self.model_name = "mistralai/Mistral-7B-Instruct-v0.2" # "meta-llama/Meta-Llama-3-8B-Instruct"
+        self.model_name = "meta-llama/Meta-Llama-3-8B-Instruct" # "meta-llama/Meta-Llama-3-8B-Instruct" "mistralai/Mistral-7B-Instruct-v0.2"
         self.llm = HuggingFaceEndpoint(
             repo_id=self.model_name,
             api_key=os.getenv("HUGGINGFACEHUB_API_TOKEN"),
@@ -159,7 +159,7 @@ class ConversationAgent:
         
         self.update_conversation_history(user_input)
         
-        if revised_inquiry.lower() == "none":
+        if revised_inquiry.lower() == "none" or revised_inquiry.lower() == "n/a":
             revised_inquiry = user_input
         
         return detected_lang, inquiry_category, user_input, revised_inquiry
@@ -179,7 +179,7 @@ class ConversationAgent:
         *** Strict Rules ***
         1️⃣ Only change the format of the faq_response following the rules below.
         2️⃣ Do not change the original response from the FAQ system.
-        3️⃣ Embed the hyperlinks in the terms.
+        3️⃣ Must embed the hyperlinks in the terms.
         4️⃣ Do not add any additional content to the response.
         5️⃣ Do not remove any content from the response.
 
@@ -244,14 +244,70 @@ class ConversationAgent:
                 pass
         return reformated_response
         
-    def handle_crs_request(self, crs_response):
+    def handle_crs_request(self, question, crs_links):
         """
         Handles the CRS response
         
         Get the title and the link from the response
         Generate a response that includes the title and the link, make sure the context is clear
         """
-        pass
+
+        handle_crs_prompt = f"""
+
+        You receive a response from the crs_links_agent agent, and you should reformat the FAQ agent's response into a human-like conversation that 
+        is easy to understand by college students. 
+
+        *** Strict Rules ***
+        1️⃣ Respond the inquiry from the student with title and links from the crs_links_agent
+        2️⃣ 
+
+
+        ### Example received input and Reformatted Outputs:
+
+        #### Example 1:
+        ** Student query: **
+        ```
+        How can I calculate my CRS Score?
+        ```
+
+        **crs_links:**
+         ```   
+        {{'CRS Calculator': 'https://www.canada.ca/en/immigration-refugees-citizenship/services/immigrate-canada/express-entry/check-score.html'}}
+         ```
+        
+
+        **Output:**
+        ```
+        Reformatted Response: To calculate your CRS score, please go to 'https://www.canada.ca/en/immigration-refugees-citizenship/services/immigrate-canada/express-entry/check-score.html
+        ```
+
+
+        
+        This is the user question
+        {question}
+
+        This is the crs_links
+        {crs_links}
+
+        Return the reformatted response in the exact format below:
+
+        ```
+        Reformatted Response: <Reformatted Response>
+        ```
+        """
+
+        # Send the classification request to the LLM
+        response = self.chat.invoke([HumanMessage(content=handle_crs_prompt)])
+        llm_output = response.content.strip()
+
+        reformated_response = None
+        
+        if "Reformatted Response:" in llm_output:
+            try:
+                reformated_response = llm_output.split("Reformatted Response:")[1].strip()
+            except:
+                pass
+        return reformated_response
     
     def handle_document_search_request(self, document_response):
         """

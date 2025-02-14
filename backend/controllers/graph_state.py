@@ -49,7 +49,7 @@ async def conversation_agent(state, **kwargs):
     question = state['question']
     sender = state['sender']
     category = state.get('category', None)
-    if sender not in ['document_search_agent', 'faq_agent', 'cross_check_agent']:
+    if sender not in ['document_search_agent', 'faq_agent', 'cross_check_agent', 'crs_links_agent']:
         response = await conv_agent.handle_user_request(question)
         if response[1] != "general":
             if response[0] == "fr" and response[3] == None:
@@ -130,8 +130,7 @@ async def conversation_agent(state, **kwargs):
     
     elif sender == "crs_links_agent":
         crs_links = state['crs_links']
-        #! Implement text generation in this line
-        generation = "generated answer"
+        generation = conv_agent.handle_crs_request(question=question, crs_links=crs_links)
         return {
             'question': question,
             'generation': generation,
@@ -169,7 +168,7 @@ def rag_retrieval(state, **kwargs):
     # filter_pinecone_search = {"tags": {"$in": [category]}}
     documents = None
     answer = document_search_agent.get_answers(question, filter=None)
-    if answer == "Not found":
+    if answer == "Answer not found":
         return {
             'question': question,
             'category': category,
@@ -340,18 +339,18 @@ immigration_graph.add_edge("cross_check_agent", END)
 
 agents = immigration_graph.compile(checkpointer=memory)
 
-# #Get image bytes from the graph
-# img_bytes = agents.get_graph().draw_mermaid_png()
+#Get image bytes from the graph
+img_bytes = agents.get_graph().draw_mermaid_png()
 
-# # Convert bytes to an image
-# img = mpimg.imread(BytesIO(img_bytes), format="png")
+# Convert bytes to an image
+img = mpimg.imread(BytesIO(img_bytes), format="png")
 
-# # Display the image
-# plt.figure(figsize=(10, 6))
-# plt.imshow(img)
-# plt.title("Multi-agent collaboration graph", fontsize=20)
-# plt.axis("off")  # Hide axes
-# plt.show()
+# Display the image
+plt.figure(figsize=(10, 6))
+plt.imshow(img)
+plt.title("Multi-agent collaboration graph", fontsize=20)
+plt.axis("off")  # Hide axes
+plt.show()
 
 config = {"configurable": {"thread_id": "1"}} # Add thread_id to the config, must be unique for each conversation
 inputs = {}

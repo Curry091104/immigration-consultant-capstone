@@ -10,7 +10,7 @@ from nltk.corpus import stopwords
 
 # nltk.download('punkt')
 # nltk.download('stopwords')
-
+# nltk.download('punkt_tab')
 
 class CRSLinksAgent:
     def __init__(self):
