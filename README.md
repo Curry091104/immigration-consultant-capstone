@@ -33,7 +33,15 @@ pip install -r requirements.txt
 
 ### Usage
 To run the project, use the following command:
+Frontend
 ```
+cd frontend
+*** pending ... ***
+```
+
+Backend
+```
+cd backend
 uvicorn app:app --reload
 ```
 
