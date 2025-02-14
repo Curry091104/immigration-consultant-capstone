@@ -1,5 +1,5 @@
 from langchain_huggingface import HuggingFaceEndpoint, ChatHuggingFace
-from langchain.schema import HumanMessage
+from langchain.schema import HumanMessage, AIMessage
 import os
 from dotenv import load_dotenv
 import googletrans
@@ -50,10 +50,10 @@ class ConversationAgent:
         - 'decision_agent': Questions about immigration, student visas, permits, IRCC, CRS score, CRS ranking, Express Entry, or any topic requiring immigration-related decision-making.
 
         ### **Strict Classification Rules**
-        1️⃣ Any inquiry mentioning **IRCC** must **ALWAYS** be classified as **'decision_agent'**.
-        2️⃣ Any inquiry mentioning **CRS score, CRS ranking, Express Entry** must **ALWAYS** be classified as **'decision_agent'**.
-        3️⃣ If the inquiry is **clearly not related to immigration**, classify it as **'general'**.
-        4️⃣ If the user asks a question that is not related to immigration, do not answer it and classify it as **'general'**.
+        1️⃣ Any inquiry mentioning **IRCC**, but the question must be **meaningful**, must **ALWAYS** be classified as **'decision_agent'**.
+        2️⃣ Any inquiry mentioning **CRS score, CRS ranking, Express Entry**, but the question must be **meaningful**, must **ALWAYS** be classified as **'decision_agent'**.
+        3️⃣ If the inquiry is **clearly not related to immigration**, do not answer it, classify it as **'general'**.
+        4️⃣ If the question is not meaningful although it is related to  **IRCC, CRS score, CRS ranking, Express Entry**, classify it as **'general'**, and ask the user to clarify the question.
 
         ### **Conversation Revision Rules**
         You consider previous conversations to revise ambiguous follow-up questions if they are missing keywords, but still relevant to previous messages.
@@ -119,12 +119,12 @@ class ConversationAgent:
         if "The Inquiry is:" in revised_inquiry:
             revised_inquiry = revised_inquiry.split("The Inquiry is:")[1].strip()
 
-        # Print the classification and reasoning for debugging
-        print(f"🔹 **Inquiry:** {user_input}")
-        print(f"✅ **Classified as:** {category}")
-        print(f"📝 **Reason:** {reason}")
-        print(f"🔍 **Revised Inquiry:** {revised_inquiry}")
-        print(f"📝 **Reason for Revision:** {reason_for_revision}\n")
+        # # Print the classification and reasoning for debugging
+        # print(f"🔹 **Inquiry:** {user_input}")
+        # print(f"✅ **Classified as:** {category}")
+        # print(f"📝 **Reason:** {reason}")
+        # print(f"🔍 **Revised Inquiry:** {revised_inquiry}")
+        # print(f"📝 **Reason for Revision:** {reason_for_revision}\n")
         
 
         return category if category in ["general", "decision_agent"] else "decision_agent", revised_inquiry
@@ -159,6 +159,9 @@ class ConversationAgent:
         
         self.update_conversation_history(user_input)
         
+        if revised_inquiry.lower() == "none":
+            revised_inquiry = user_input
+        
         return detected_lang, inquiry_category, user_input, revised_inquiry
     
     
@@ -168,24 +171,103 @@ class ConversationAgent:
         
         Do not change the original response from the FAQ system.
         Only change the format of the response to the user.
+        """
         
-        Example:
-        Document(
-            page_content="This is the content of the FAQ response."
-            metadata={
-                "hyperlinks": ["https://www.example.com: content"],
-            }
-        )
+        handle_faq_prompt = f"""You receive a response from the FAQ agent, and you should reformat the FAQ agent's response into a human-like conversation that 
+        is easy to understand by college students. In your response, you should embed hyperlinks in the terms.
+
+        *** Strict Rules ***
+        1️⃣ Only change the format of the faq_response following the rules below.
+        2️⃣ Do not change the original response from the FAQ system.
+        3️⃣ Embed the hyperlinks in the terms.
+        4️⃣ Do not add any additional content to the response.
+        5️⃣ Do not remove any content from the response.
+
+
+        ### Example FAQ Responses and Reformatted Outputs:
+
+        #### Example 1:
+        **Input:**
+        ```
+        {{'page_content'="This is the content of the FAQ response." 'metadata'={{ "hyperlinks": [ {{ "hyperlink": "https://www.example.com", "text": "content" }} ] }}}}
+        ```
+
+        **Output:**
+        ```
+        Reformatted Response: This is the [content](https://www.example.com) of the FAQ response.
+        ```
+
+        #### Example 2:
+        **Input:**
+        ```
+        {{'page_content'="Your study permit lets you study in Canada. You still need a visitor visa (temporary resident visa) or an Electronic Travel Authorization (eTA) to enter Canada." 'metadata'={{ "hyperlinks": [ {{ "hyperlink": "https://www.example.com", "text": "temporary resident visa" }}, {{ "hyperlink": "https://www.example2.com", "text": "Electronic Travel Authorization" }} ] }}}}
+        ```
+
+        **Output:**
+        ```
+        Reformatted Response: Your study permit lets you study in Canada. You still need a visitor visa [temporary resident visa](https://www.example.com) or an [Electronic Travel Authorization](https://www.example2.com) (eTA) to enter Canada.
+        ```
         
-        Change the response to: This is the [https://www.example.com](content) of the FAQ response.
+        *** HOW TO FORMAT THE RESPONSE ***
+        1️⃣ Extract the 'page_content' and 'metadata' from the FAQ agent's response.
+        2️⃣ Identify the terms in the 'page_content' that need hyperlinks based on the 'metadata'.
+        3️⃣ Embed the hyperlinks in the terms within the 'page_content'.
+        4️⃣ Maintain the original content and order of the 'page_content'.
+        5️⃣ Format the response as shown in the example outputs.
+
+        
+        This is the response from the FAQ agent:
+        {faq_response}
+
+        Return the reformatted response in the exact format below:
+
+        ```
+        Reformatted Response: <Reformatted Response>
+        Reason: if the faq_response is not reformatted, provide a reason why it was not reformatted. 
+        ```
+        """
+
+        
+        # Send the classification request to the LLM
+        response = self.chat.invoke([HumanMessage(content=handle_faq_prompt)])
+        
+        llm_output = response.content.strip()
+        
+        reformated_response = None
+        reason = "No explanation provided."
+        
+        if "Reformatted Response:" in llm_output and "Reason:" in llm_output:
+            try:
+                reformated_response = llm_output.split("Reformatted Response:")[1].split("Reason:")[0].strip()
+                reason = llm_output.split("Reason:")[1].strip()
+            except:
+                pass
+        return reformated_response
+        
+    def handle_crs_request(self, crs_response):
+        """
+        Handles the CRS response
+        
+        Get the title and the link from the response
+        Generate a response that includes the title and the link, make sure the context is clear
         """
         pass
     
-    def handle_crs_request(self, crs_response):
-        pass
-    
     def handle_document_search_request(self, document_response):
+        """
+        Handles the document search response
+        
+        Two situations:
+        1. If the document is found
+        2. If the document is not found, ask the user to clarify the question
+        """
         pass
     
     def handle_cross_agent_request(self, cross_check_request):
+        """
+        Handles the cross-check request
+        
+        When this agent asks for revision of the previous inquiry, which means the previous inquiry was not matched with the document search.add()
+        Generate a response again that must be closed to the documents, then return to cross-check agent to re-check
+        """
         pass

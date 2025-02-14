@@ -737,3 +737,13 @@ def convert_faq_to_langchain_docformat(faq_docs):
         )
         final_faq_docs.append(final_faq_doc)
     return final_faq_docs
+
+def extract_keys_hyperlinks_pinecone(docs):
+    reformatted_hyperlinks = []
+    hyperlink_text = {}
+    for doc in docs:
+        for hyperlink in doc["metadata"]["hyperlinks"]:
+            hyperlink_text["hyperlink"] = hyperlink.split(": ")[0]
+            hyperlink_text["text"] = hyperlink.split(": ")[1]
+            reformatted_hyperlinks.append(hyperlink_text)
+    return reformatted_hyperlinks

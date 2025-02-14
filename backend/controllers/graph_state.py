@@ -6,9 +6,10 @@ from controllers.agents.conversation_agent import ConversationAgent
 from agents.faq_agent import FAQAgent
 from agents.cross_check_agent import CrossCheckAgent
 from agents.decision_agent import DecisionAgent
-from langchain.schema import HumanMessage, AIMessage
-from langchain.schema import Document
+from agents.crs_links_agent import CRSLinksAgent
+from langchain.schema import HumanMessage
 from langgraph.checkpoint.memory import MemorySaver
+from data_processing import extract_keys_hyperlinks_pinecone
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
 import langsmith as ls
@@ -27,13 +28,14 @@ document_search_agent = DocumentSearchAgent()
 faq_agent = FAQAgent()
 cross_check_agent = CrossCheckAgent()
 dec_agent = DecisionAgent()
+crs_links_agent = CRSLinksAgent()
 
 class GraphState(TypedDict):
     sender: Optional[str]
     receiver: Optional[str]
     question: str
     generation: Optional[str]
-    documents: Optional[Document]
+    documents: Optional[dict]
     crs_links: Optional[List[str]]
     cross_check_needed: Optional[bool]
     revised_message: Optional[str]
@@ -83,10 +85,11 @@ async def conversation_agent(state, **kwargs):
     elif sender == 'document_search_agent':
         cross_check_needed = state['cross_check_needed']
         #! Implement text generation in this line
+        generation = "generated answer"
         if cross_check_needed:
             return {
                 'question': question, 
-                'generation': state['generation'],
+                'generation': generation,
                 'documents': state['documents'],
                 'category': category,
                 'sender': 'conversation_agent',
@@ -97,7 +100,7 @@ async def conversation_agent(state, **kwargs):
             #! Implement text generation in this line -- No cross check needed because answer is not found
             return {
                 'question': question, 
-                'generation': state['generation'],
+                'generation': generation,
                 'category': category,
                 'sender': 'conversation_agent',
                 'receiver': '_end_',
@@ -105,9 +108,10 @@ async def conversation_agent(state, **kwargs):
     elif sender == 'cross_check_agent':
         revised_message = state['revised_message']
         #! Implement text generation in this line
+        generation = "generated answer"
         return {
             'question': question, 
-            'generation': state['generation'],
+            'generation': generation,
             'documents': state['documents'],
             'category': category,
             'sender': 'conversation_agent',
@@ -115,10 +119,22 @@ async def conversation_agent(state, **kwargs):
         }
     elif sender == 'faq_agent':
         faq_docs = state['documents']
-        #! Implement text generation in this line
+        generation = conv_agent.handle_faq_request(faq_docs)
         return {
             'question': question, 
-            'generation': state['generation'],
+            'generation': generation,
+            'category': category,
+            'sender': 'conversation_agent',
+            'receiver': '_end_',
+        }
+    
+    elif sender == "crs_links_agent":
+        crs_links = state['crs_links']
+        #! Implement text generation in this line
+        generation = "generated answer"
+        return {
+            'question': question,
+            'generation': generation,
             'category': category,
             'sender': 'conversation_agent',
             'receiver': '_end_',
@@ -142,7 +158,7 @@ def decision_agent(state, **kwargs):
             'question': question,
             'category': category,
             'sender': 'decision_agent',
-            'receiver': '' #CRS Agent
+            'receiver': 'crs_links_agent'
         }
 
 @ls.traceable(langsmith_client, name="document_search_agent")
@@ -163,13 +179,21 @@ def rag_retrieval(state, **kwargs):
             'request_user': "Answer not found. Please ask user for more details."
         }
     else:
-        documents = Document(
-            page_content=answer.get('text', ''),
-            metadata={
-                'hyperlinks': answer.get('hyperlinks', []),
-                'reference': answer.get('ref_link', '')
+        documents = [
+            {
+            "page_content": answer.get('text', ''),
+            "metadata": {
+                'hyperlinks': answer.get('hyperlinks', [])
+                }
             }
-        )
+        ]
+        extracted_hyperlinks = extract_keys_hyperlinks_pinecone(docs=documents)
+        documents = {
+            "page_content": answer.get('text', ''),
+            "metadata": {
+                'hyperlinks': extracted_hyperlinks
+            }
+        }
         return {
             'question': question, 
             'category': category,
@@ -195,12 +219,21 @@ def faq_retrieval(state, **kwargs):
             'receiver': 'document_search_agent',
         }
     else:
-        documents = Document(
-            page_content=answer.get('answer', ''),  
-            metadata={
+        documents = [
+            {
+            "page_content": answer.get('answer', ''),
+            "metadata": {
                 'hyperlinks': answer.get('hyperlinks', [])
+                }
             }
-        )
+        ]
+        extracted_hyperlinks = extract_keys_hyperlinks_pinecone(docs=documents)
+        documents = {
+            "page_content": answer.get('answer', ''),
+            "metadata": {
+                'hyperlinks': extracted_hyperlinks
+            }
+        }
         return {
             'question': question,
             'category': category,
@@ -235,6 +268,29 @@ def cross_check(state, **kwargs):
             'sender': 'cross_check_agent',
             'receiver': 'conversation_agent'
         } 
+        
+@ls.traceable(langsmith_client, name="crs_links_agent")
+def crs_agent(state, **kwargs):
+    print("\n############################################ CRS Links Agent ############################################\n")
+    question = state['question']
+    category = state['category']
+    crs_links = crs_links_agent.get_recommendations(question)
+    if crs_links == "No recommendations found":
+        return {
+            'question': question,
+            'category': category,
+            'request_user': "No recommendations found. Please ask user for more details.",
+            'sender': 'crs_links_agent',
+            'receiver': 'conversation_agent'
+        }
+    else:
+        return {
+            'question': question,
+            'category': category,
+            'crs_links': crs_links,
+            'sender': 'crs_links_agent',
+            'receiver': 'conversation_agent'
+        }
     
 immigration_graph = StateGraph(GraphState)
 
@@ -245,6 +301,7 @@ immigration_graph.add_node("document_search_agent", rag_retrieval)
 immigration_graph.add_node("faq_agent", faq_retrieval)
 immigration_graph.add_node("cross_check_agent", cross_check)
 immigration_graph.add_node("decision_agent", decision_agent)
+immigration_graph.add_node("crs_links_agent", crs_agent)
 
 # Build the graph
 immigration_graph.add_edge(START, "conversation_agent")
@@ -263,7 +320,7 @@ immigration_graph.add_conditional_edges(
     lambda state: state['receiver'],
     {
         "faq_agent": "faq_agent",
-        # 'crs_agent': "crs_agent"
+        "crs_links_agent": "crs_links_agent"
     }
 )
 
@@ -276,7 +333,7 @@ immigration_graph.add_conditional_edges(
     }
 )
 
-
+immigration_graph.add_edge("crs_links_agent", "conversation_agent")
 immigration_graph.add_edge("document_search_agent", "conversation_agent")
 immigration_graph.add_edge("cross_check_agent", END)
 
