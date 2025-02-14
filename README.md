@@ -1,13 +1,11 @@
 # Canada Immigration Consultation Chatbot
 
 ## Table of Contents
-- [Canada Immigration Consultation Chatbot](#canada-immigration-consultation-chatbot)
-  - [Table of Contents](#table-of-contents)
-    - [Project Description](#project-description)
-    - [Installation](#installation)
-    - [Usage](#usage)
-    - [Contributors](#contributors)
-    - [License](#license)
+- [Project Description](#project-description)
+- [Installation](#installation)
+- [Usage](#usage)
+- [Contributors](#contributors)
+- [License](#license)
 
 
 ### Project Description
