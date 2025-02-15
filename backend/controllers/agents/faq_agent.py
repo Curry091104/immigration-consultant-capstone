@@ -15,7 +15,7 @@ class FAQAgent:
         if found_doc.status_code == 200:
             output_search = json.loads(found_doc.body)
             matches = output_search['results']['matches']
-            if matches[0]['score'] > 0.85:
+            if matches[0]['score'] > 0.87:
                 return matches[0].get('metadata')
             return "Not found"
         else:

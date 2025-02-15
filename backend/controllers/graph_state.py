@@ -51,7 +51,7 @@ async def conversation_agent(state, **kwargs):
     category = state.get('category', None)
     if sender not in ['document_search_agent', 'faq_agent', 'cross_check_agent', 'crs_links_agent']:
         response = await conv_agent.handle_user_request(question)
-        if response[1] != "general":
+        if response[1] != "general" or response[1].lower() != "none":
             if response[0] == "fr" and response[3] == None:
                 question = response[2]
             elif response[0] == "fr" and response[3] != None:
@@ -63,6 +63,13 @@ async def conversation_agent(state, **kwargs):
             return {
                 'question': question,
                 'generation': response[1], 
+                'sender': 'conversation_agent',
+                'receiver': '_end_',
+            }
+        elif response[1].lower() == "none":
+            return {
+                'question': question, 
+                'generation': "Sorry, I am not able to answer this question. I can help you with questions related to international students in Canada about study permit, PGWP, and visa.",
                 'sender': 'conversation_agent',
                 'receiver': '_end_',
             }
@@ -86,8 +93,13 @@ async def conversation_agent(state, **kwargs):
         cross_check_needed = state['cross_check_needed']
         #! Implement text generation in this line
         documents = state['documents']
-        generation = "generated answer"
+        
+        # print("###############################################")
+        # print(documents)
+        # print("###############################################")
+        
         if cross_check_needed:
+            generation = conv_agent.handle_document_search_request(document_response=documents)
             return {
                 'question': question, 
                 'generation': generation,
@@ -98,8 +110,7 @@ async def conversation_agent(state, **kwargs):
             }
         else:
             request_user = state['request_user']
-            #! Implement text generation in this line -- No cross check needed because answer is not found
-            generation = "generated answer"
+            generation = conv_agent.handle_document_search_request(request_user)
             return {
                 'question': question, 
                 'generation': generation,
@@ -184,7 +195,8 @@ def rag_retrieval(state, **kwargs):
             {
             "page_content": answer.get('text', ''),
             "metadata": {
-                'hyperlinks': answer.get('hyperlinks', [])
+                'hyperlinks': answer.get('hyperlinks', []),
+                'ref_link': answer.get('ref_link', None)
                 }
             }
         ]
@@ -192,7 +204,8 @@ def rag_retrieval(state, **kwargs):
         documents = {
             "page_content": answer.get('text', ''),
             "metadata": {
-                'hyperlinks': extracted_hyperlinks
+                'hyperlinks': extracted_hyperlinks,
+                'ref_link': answer.get('ref_link', None)
             }
         }
         return {
@@ -341,18 +354,18 @@ immigration_graph.add_edge("cross_check_agent", END)
 
 agents = immigration_graph.compile(checkpointer=memory)
 
-#Get image bytes from the graph
-img_bytes = agents.get_graph().draw_mermaid_png()
+# #Get image bytes from the graph
+# img_bytes = agents.get_graph().draw_mermaid_png()
 
-# Convert bytes to an image
-img = mpimg.imread(BytesIO(img_bytes), format="png")
+# # Convert bytes to an image
+# img = mpimg.imread(BytesIO(img_bytes), format="png")
 
-# Display the image
-plt.figure(figsize=(10, 6))
-plt.imshow(img)
-plt.title("Multi-agent collaboration graph", fontsize=20)
-plt.axis("off")  # Hide axes
-plt.show()
+# # Display the image
+# plt.figure(figsize=(10, 6))
+# plt.imshow(img)
+# plt.title("Multi-agent collaboration graph", fontsize=20)
+# plt.axis("off")  # Hide axes
+# plt.show()
 
 config = {"configurable": {"thread_id": "1"}} # Add thread_id to the config, must be unique for each conversation
 inputs = {}

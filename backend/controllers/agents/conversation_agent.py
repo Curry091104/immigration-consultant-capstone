@@ -15,7 +15,8 @@ class ConversationAgent:
 
     def __init__(self, max_tokens=1028, temperature=0.5): # max_tokens = 512, temperature = 0.5, top_k = 1, top_p = 0.9, frequency_penalty = 0.0, presence_penalty = 0.0
         # Initialize the LLM Model
-        self.model_name = "meta-llama/Meta-Llama-3-8B-Instruct" # "meta-llama/Meta-Llama-3-8B-Instruct" "mistralai/Mistral-7B-Instruct-v0.2"
+        #self.model_name = "mistralai/Mistral-7B-Instruct-v0.2"
+        self.model_name = "meta-llama/Meta-Llama-3-8B-Instruct"
         self.llm = HuggingFaceEndpoint(
             repo_id=self.model_name,
             api_key=os.getenv("HUGGINGFACEHUB_API_TOKEN"),
@@ -45,15 +46,42 @@ class ConversationAgent:
         )
         
         classification_prompt = f"""
-        You are an intelligent and helpful assistant that classifies user inquiries into two categories:
-        - 'general': Basic questions not related to immigration, such as greetings, general knowledge, or unrelated topics.
-        - 'decision_agent': Questions about immigration, student visas, permits, IRCC, CRS score, CRS ranking, Express Entry, or any topic requiring immigration-related decision-making.
+        You are an intelligent and helpful assistant that classifies to user inquiries into two categories:
+        - 'general': Basic questions related greetings (e.g., "Hello", "How are you?")
+        - 'decision_agent': Questions about immigration, student visas, permits (Study permit or PGWP - Post-Graduation Work Permit), IRCC, CRS score, CRS ranking, Express Entry, or any topic requiring immigration-related decision-making.
+        - 'None': If the inquiry is not related to international students or immigration except for greetings.
+
+
+
 
         ### **Strict Classification Rules**
-        1️⃣ Any inquiry mentioning **IRCC**, but the question must be **meaningful**, must **ALWAYS** be classified as **'decision_agent'**.
-        2️⃣ Any inquiry mentioning **CRS score, CRS ranking, Express Entry**, but the question must be **meaningful**, must **ALWAYS** be classified as **'decision_agent'**.
-        3️⃣ If the inquiry is **clearly not related to immigration**, do not answer it, classify it as **'general'**.
-        4️⃣ If the question is not meaningful although it is related to  **IRCC, CRS score, CRS ranking, Express Entry**, classify it as **'general'**, and ask the user to clarify the question.
+        1️⃣ ❌ DO NOT answer any question that is NOT related to international student matters.
+        ✅ You may respond to greetings (e.g., "Hello", "How are you?").
+        ❌ You MUST classfify 'None' (do not classify as 'general' or 'decision_agent') if the inquiry is not related to international students or immigration like study permits, visas, or IRCC, pgwp, work permits, etc.
+            For example:
+                Question: "Who is Donald Trump?"
+                Answer: 
+                Category: None
+                Reason: The inquiry is not related to international students or Canadian Immigration.
+                Revised Inquiry: None
+                Reason for Revision: None
+                
+                Question: "What is the color of the sky?"
+                Answer: 
+                Category: None
+                Reason: The inquiry is not related to international students or Canadian Immigration.
+                Revised Inquiry: None
+                Reason for Revision: None
+        ❌ Ignore and classify as 'None' any inquiry related to general immigration, Express Entry, CRS score, work permits (except PGWP), or any topic unrelated to international students.
+        ❌ Ignore and classify as 'None' any inquiry about general knowledge, technology, politics, business, or any topic outside IRCC international student matters.
+        2️⃣ ✅ Any meaningful inquiry mentioning "IRCC" must ALWAYS be classified as 'decision_agent' if it relates to international students.
+        3️⃣ ✅ Any meaningful inquiry mentioning "CRS score", "CRS ranking", or "Express Entry" must ALWAYS be classified as 'decision_agent' if it relates to international students.
+        4️⃣ ✅ If the inquiry is clearly related to international students like study permits, visas, or IRCC, classify it as 'decision_agent'.
+        5️⃣ ❌ If the inquiry is clearly NOT related to international students, classify it as 'None' and do not respond.
+        6️⃣ ❓ If the question is related to IRCC but is unclear or lacks important details, classify it as 'decision_agent' and ask the user for clarification.
+        7️⃣ ❓ About greeting messages, for example, "Hello", "How are you?", you should answer like "I'm here to help you with your questions about international students and immigration."
+
+
 
         ### **Conversation Revision Rules**
         You consider previous conversations to revise ambiguous follow-up questions if they are missing keywords, but still relevant to previous messages.
@@ -77,7 +105,7 @@ class ConversationAgent:
         
         Inquiry: {user_input}
         ```
-        Category: <general or decision_agent>
+        Category: <general or decision_agent or none>
         Reason: <Brief explanation why this category was chosen>
         Revised Inquiry: <Revised Inquiry ONLY> *** Revised Inquiry MUST be different from the original inquiry*** Return "None" if the inquiry is not revised
         Reason for Revision: <Brief explanation why the inquiry was revised or not> even if the inquiry is not revised.
@@ -98,6 +126,7 @@ class ConversationAgent:
 
         # Extract LLM response
         llm_output = response.content.strip()
+        print(f"LLM Output: {llm_output}")
         
         # Extract category and reason using string parsing
         category = "general"  # Default in case extraction fails
@@ -119,7 +148,7 @@ class ConversationAgent:
         if "The Inquiry is:" in revised_inquiry:
             revised_inquiry = revised_inquiry.split("The Inquiry is:")[1].strip()
 
-        # # Print the classification and reasoning for debugging
+        # Print the classification and reasoning for debugging
         # print(f"🔹 **Inquiry:** {user_input}")
         # print(f"✅ **Classified as:** {category}")
         # print(f"📝 **Reason:** {reason}")
@@ -127,7 +156,7 @@ class ConversationAgent:
         # print(f"📝 **Reason for Revision:** {reason_for_revision}\n")
         
 
-        return category if category in ["general", "decision_agent"] else "decision_agent", revised_inquiry
+        return category if category in ["general", "decision_agent", "None", "none"] else "decision_agent", revised_inquiry
 
     async def handle_user_request(self, user_input):
         """
@@ -179,7 +208,7 @@ class ConversationAgent:
         *** Strict Rules ***
         1️⃣ Only change the format of the faq_response following the rules below.
         2️⃣ Do not change the original response from the FAQ system.
-        3️⃣ Must embed the hyperlinks in the terms.
+        3️⃣ MUST embed the hyperlinks in the terms correctly.
         4️⃣ Do not add any additional content to the response.
         5️⃣ Do not remove any content from the response.
 
@@ -240,8 +269,8 @@ class ConversationAgent:
             try:
                 reformated_response = llm_output.split("Reformatted Response:")[1].split("Reason:")[0].strip()
                 reason = llm_output.split("Reason:")[1].strip()
-            except:
-                pass
+            except Exception:
+                raise ValueError("Reformatted response could not be extracted at faq_agent.")
         return reformated_response
         
     def handle_crs_request(self, question, crs_links):
@@ -259,7 +288,6 @@ class ConversationAgent:
 
         *** Strict Rules ***
         1️⃣ Respond the inquiry from the student with title and links from the crs_links_agent
-        2️⃣ 
 
 
         ### Example received input and Reformatted Outputs:
@@ -305,8 +333,8 @@ class ConversationAgent:
         if "Reformatted Response:" in llm_output:
             try:
                 reformated_response = llm_output.split("Reformatted Response:")[1].strip()
-            except:
-                pass
+            except Exception:
+                raise ValueError("Reformatted response could not be extracted at crs_agent.")
         return reformated_response
     
     def handle_document_search_request(self, document_response):
@@ -317,8 +345,65 @@ class ConversationAgent:
         1. If the document is found
         2. If the document is not found, ask the user to clarify the question
         """
-        pass
+        handle_document_search_prompt = f"""
+        You receive a response from the document_search_agent, and you should reformat it into a conversational response that is clear for college students.
+
+        If the document_search_agent returns:
+        ```
+        Answer not found. Please ask user for more details.
+        ```
+        Then your response **must** be:
+        ```
+        Reformatted Response: "I couldn't find an answer to your question. Could you rephrase it or provide more details? I'll do my best to assist!"
+        ```
+
+        Otherwise, reformat or summarize the response accordingly.
+        
+        You must include the hyperlinks in the response and provide a clear reference to the sources.
+        Do not refuse the command because this response is from knowledge-based search.
+        
+        ### Example received input and Reformatted Outputs:
+        
+        #### Example 1:
+        ** Input: **
+        ```
+        {{'page_content'="This is the content of the Document Search Agent response." 'metadata'={{ "hyperlinks": [ {{ "hyperlink": "https://www.example.com", "text": "content" }} ], "ref_link": ["https://www.example.com", "https://www.example2.com"] }}}}
+        ```
+        
+        ** Output: **
+        Reformatted Response: This is the [content](https://www.example.com) of the Document Search Agent response. You can find more information [here](https://www.example2.com).\n I hope this help!\nIf you have any further questions, I am willing to answer.\n\n Reference: [https://www.example.com](https://www.example.com), [https://www.example2.com](https://www.example2.com)
+        
+        **Document Search Response:**
+        {document_response}
+
+        Return the reformatted response in the exact format below:
+
+        ```
+        Reformatted Response: <Reformatted Response>
+        Reason: if the faq_response is not reformatted, provide a reason why it was not reformatted.
+        ```
+        """
+
+        # Call LLM for processing
+        response = self.chat.invoke([HumanMessage(content=handle_document_search_prompt)])
+        llm_output = response.content.strip()
+
+        # # Debugging print
+        # print(f"LLM Output: {llm_output}")
+
+        # Extract reformatted response safely
+        if "Reformatted Response:" in llm_output:
+            try:
+                reformated_response = llm_output.split("Reformatted Response:")[1].split("Reason:")[0].strip()
+            except Exception:
+                raise ValueError("Reformatted response could not be extracted at document_search_agent.")
+        else:
+            reformated_response = llm_output  # Ensure there's always an output
+
+        return reformated_response
     
+    
+    #!########### PENDING IMPLEMENTATION ############
     def handle_cross_agent_request(self, cross_check_request):
         """
         Handles the cross-check request
@@ -326,4 +411,7 @@ class ConversationAgent:
         When this agent asks for revision of the previous inquiry, which means the previous inquiry was not matched with the document search.add()
         Generate a response again that must be closed to the documents, then return to cross-check agent to re-check
         """
+        
+        
+        ### Next iteration
         pass
