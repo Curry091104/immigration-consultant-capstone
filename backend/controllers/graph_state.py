@@ -85,12 +85,13 @@ async def conversation_agent(state, **kwargs):
     elif sender == 'document_search_agent':
         cross_check_needed = state['cross_check_needed']
         #! Implement text generation in this line
+        documents = state['documents']
         generation = "generated answer"
         if cross_check_needed:
             return {
                 'question': question, 
                 'generation': generation,
-                'documents': state['documents'],
+                'documents': documents,
                 'category': category,
                 'sender': 'conversation_agent',
                 'receiver': 'cross_check_agent'
@@ -98,6 +99,7 @@ async def conversation_agent(state, **kwargs):
         else:
             request_user = state['request_user']
             #! Implement text generation in this line -- No cross check needed because answer is not found
+            generation = "generated answer"
             return {
                 'question': question, 
                 'generation': generation,
