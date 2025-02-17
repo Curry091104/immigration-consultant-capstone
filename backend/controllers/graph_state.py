@@ -263,7 +263,8 @@ def cross_check(state, **kwargs):
     category = state['category']
     generation = state['generation']
     documents = state['documents']
-    similarity_score = cross_check_agent.cross_check(generation, documents)
+    refined_doc = documents['page_content']
+    similarity_score = cross_check_agent.cross_check(generation, refined_doc)
     if similarity_score > 0.75:
         return {
             'question': question,

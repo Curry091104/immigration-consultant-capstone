@@ -15,8 +15,8 @@ class ConversationAgent:
 
     def __init__(self, max_tokens=1028, temperature=0.5): # max_tokens = 512, temperature = 0.5, top_k = 1, top_p = 0.9, frequency_penalty = 0.0, presence_penalty = 0.0
         # Initialize the LLM Model
-        #self.model_name = "mistralai/Mistral-7B-Instruct-v0.2"
-        self.model_name = "meta-llama/Meta-Llama-3-8B-Instruct"
+        self.model_name = "mistralai/Mistral-7B-Instruct-v0.2"
+        #self.model_name = "meta-llama/Meta-Llama-3-8B-Instruct"
         self.llm = HuggingFaceEndpoint(
             repo_id=self.model_name,
             api_key=os.getenv("HUGGINGFACEHUB_API_TOKEN"),
@@ -126,7 +126,7 @@ class ConversationAgent:
 
         # Extract LLM response
         llm_output = response.content.strip()
-        print(f"LLM Output: {llm_output}")
+        # print(f"LLM Output: {llm_output}")
         
         # Extract category and reason using string parsing
         category = "general"  # Default in case extraction fails
@@ -373,6 +373,15 @@ class ConversationAgent:
         ** Output: **
         Reformatted Response: This is the [content](https://www.example.com) of the Document Search Agent response. You can find more information [here](https://www.example2.com).\n I hope this help!\nIf you have any further questions, I am willing to answer.\n\n Reference: [https://www.example.com](https://www.example.com), [https://www.example2.com](https://www.example2.com)
         
+        
+        **** STRICT RULES ****
+        1️⃣ Summarize the document_search_agent response but do not cut off any important information.
+        2️⃣ Embed the hyperlinks in the terms correctly.
+        3️⃣ Do not add any additional content to the response.
+        4️⃣ Make sure all the information is clear and easy to understand. Your response shhould be matched at least 80% with the original document.
+        5️⃣ Give as much detailed information as possible, but do not make it too long.
+        6️⃣ Always include the reference to the source.
+        
         **Document Search Response:**
         {document_response}
 
@@ -380,7 +389,7 @@ class ConversationAgent:
 
         ```
         Reformatted Response: <Reformatted Response>
-        Reason: if the faq_response is not reformatted, provide a reason why it was not reformatted.
+        Reason: if the response is not reformatted, provide a reason why it was not reformatted.
         ```
         """
 

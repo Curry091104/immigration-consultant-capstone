@@ -12,16 +12,8 @@ class CrossCheckAgent:
     def __embed_text(self, text):
         return self.embedding_model.embed_documents([text])
     
-    def uncover_langchain_doctype(self, doc):
-        text = doc["page_content"]
-        # Clean the text
-        text = re.sub(r'\n', ' ', text)
-        text = re.sub(r'\s+', ' ', text)
-        text = text.strip()
-        return text
-    
     def cross_check(self, llm_answer, ref_answer):
         llm_embedding = self.__embed_text(llm_answer)
-        ref_embedding = self.__embed_text(self.uncover_langchain_doctype(ref_answer))
+        ref_embedding = self.__embed_text(ref_answer)
         similarity_score = util.pytorch_cos_sim(llm_embedding, ref_embedding)
         return similarity_score.item()
