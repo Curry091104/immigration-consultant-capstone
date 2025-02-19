@@ -1,0 +1,110 @@
+import streamlit as st
+import requests
+import time
+import dotenv
+import os
+
+dotenv.load_dotenv()
+
+
+def edit_extracted_pdf_page():
+    st.title("Edit Extracted a PDF Document")
+      
+    if "backend_response" in st.session_state:
+        if "docs" not in st.session_state:
+            st.session_state.docs = st.session_state.backend_response.get("docs")
+            
+        get_user_input(st.session_state.docs)
+    else:
+        st.write("Error: No data found.")
+        st.stop()
+    
+def get_user_input(docs):
+    st.sidebar.button("⬅ Back", on_click=go_back)
+    ofc_doc_id = st.text_input(
+        "Enter document ID *",
+        value="",
+        help="Type the document ID. Should be title of the document and the modified date of the document.",
+        placeholder="e.g., study-permit-2025-01-01"
+    )
+    
+    st.subheader("Documents")
+    st.write("Please review the text carefully")
+    updated_docs = []
+    for doc in st.session_state.docs:
+        with st.expander(f"Document ID: {doc['id'] + 1}"):
+            doc_key = "doc_" + str(doc['id'])
+            
+            if doc_key not in st.session_state:
+                st.session_state[doc_key] = {
+                    "tags": ", ".join(tag.lower() for tag in doc['tags']),
+                    "content": doc['content'],
+                    "hyperlinks": doc['hyperlinks'],
+                    "ref_link": doc['ref_link']
+                }
+                
+            st.session_state[doc_key]["tags"] = st.text_input("Tags:", st.session_state[doc_key]["tags"], key=f"tags_{doc['id']}")
+            st.session_state[doc_key]["content"] = st.text_area("Content:", st.session_state[doc_key]["content"], key=f"content_{doc['id']}")
+            
+            st.write("Hyperlinks:")
+            updated_hyperlinks = []
+            for i, hyperlink in enumerate(doc['hyperlinks']):
+                hyperlink_parts = hyperlink.split(": ")
+                original_hyperlink = hyperlink_parts[0]
+                original_text = hyperlink_parts[1]
+                hyperlink_col, text_col = st.columns(2)
+                with hyperlink_col:
+                    edited_hyperlink = st.text_area(f"Hyperlink:", original_hyperlink, key=f"hyperlink_{doc['id']}_{i}", label_visibility="collapsed")
+                with text_col:
+                    edited_hyperlink_text = st.text_area(f"Hyperlink Text:", original_text, key=f"hyperlink_text_{doc['id']}_{i}", label_visibility="collapsed")
+                    
+                if edited_hyperlink != original_hyperlink or edited_hyperlink_text != original_text:
+                    updated_hyperlinks.append(f"{edited_hyperlink}: {edited_hyperlink_text}")
+                else:
+                    updated_hyperlinks.append(original_hyperlink + ": " + original_text)
+                
+            st.session_state[doc_key]["hyperlinks"] = updated_hyperlinks
+            st.session_state[doc_key]["ref_link"] = st.text_input("Reference Link:", st.session_state[doc_key]["ref_link"], key=f"ref_link_{doc['id']}") 
+
+            
+            updated_docs.append({
+                "id": doc['id'],
+                "tags": st.session_state[doc_key]["tags"],
+                "content": st.session_state[doc_key]["content"],
+                "hyperlinks": st.session_state[doc_key]["hyperlinks"],
+                "ref_link": st.session_state[doc_key]["ref_link"]
+            })
+            
+    st.session_state.docs = updated_docs
+    st.button(
+        "Save Changes",
+        on_click=lambda: on_save_changes(ofc_doc_id, st.session_state.docs)
+    )
+    
+def on_save_changes(ofc_doc_id, docs):
+    data = {
+        "docs": docs,
+        "ofc_doc_id": ofc_doc_id
+    }
+    with st.spinner("Please wait..."):
+        st.session_state.error = False
+        try:
+            response = requests.post("http://localhost:8000/api/save-pdf-to-pinecone", headers=os.getenv("API_KEY"), data=data)
+            st.session_state.backend_response = response.json()
+            if response.status_code != 201:
+                st.session_state.error = True
+        except requests.exceptions.RequestException:
+            st.session_state.error = True
+    
+    if st.session_state.error:
+        st.error("Error: Something went wrong. Please try again.")
+    else:
+        success_message = st.success("Changes saved successfully. Redirecting to the upload page...")
+        time.sleep(1.5)
+        success_message.empty()
+        st.session_state.processing_done = False
+        st.session_state.page = "upload_pdf_page"
+   
+def go_back():
+    st.session_state.page = "upload_pdf_page"
+            
