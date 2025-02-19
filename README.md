@@ -22,7 +22,7 @@ git clone https://github.com/Curry091104/immigration-consultant-capstone.git
 Frontend
 ```
 cd frontend
-*** pending ... ***
+pip install -r requirements.txt
 ```
 
 Backend
@@ -32,17 +32,17 @@ pip install -r requirements.txt
 ```
 
 ### Usage
-To run the project, use the following command: </br>
+To run the project, use the following command: </br></br>
 Frontend
 ```
 cd frontend
-*** pending ... ***
+streamlit run Home.py
 ```
 
 Backend
 ```
 cd backend
-uvicorn app:app --reload
+uvicorn main:app --reload
 ```
 
 ### Contributors
