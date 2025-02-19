@@ -1,4 +1,4 @@
-# Canada Immigration Consultation Chatbot
+# Canadian Immigration Consultant Chatbot
 
 ## Table of Contents
 - [Project Description](#project-description)
@@ -19,16 +19,33 @@ git clone https://github.com/Curry091104/immigration-consultant-capstone.git
 
 <b><i>2. Install dependencies: </i></b>
 
+Frontend
 ```
+cd frontend
+pip install -r requirements.txt
+```
+
+Backend
+```
+cd backend
+pip install -r requirements.txt
 ```
 
 ### Usage
-To run the project, use the following command:
+To run the project, use the following command: </br></br>
+Frontend
 ```
-uvicorn app:app --reload
+cd frontend
+streamlit run Home.py
+```
+
+Backend
+```
+cd backend
+uvicorn main:app --reload
 ```
 
 ### Contributors
 
 ### License
-This project is licensed under the [MIT License](LICENSE)
+This project is licensed under the [Creative Commons Attribution-NonCommercial 4.0 International License](LICENSE)
