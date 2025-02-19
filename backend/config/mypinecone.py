@@ -40,6 +40,18 @@ class MyPinecone:
         self.doc_store = PineconeVectorStore.from_documents(docs, self.embedding_model, index_name = index_name)
         return JSONResponse({'message': f"Data inserted into index {index_name}"}, status_code=201)
     
+    def delete_data_by_ofc_doc_id(self, index_name, ofc_doc_id):
+        if index_name not in self.list_index_names():
+            return JSONResponse({'message': f"Index {index_name} does not exist"}, status_code=400)
+        
+        index = self.pinecone_client.Index(index_name)
+        index.delete(
+            filter = {
+                "ofc_doc_id": {"$eq": ofc_doc_id}
+            }
+        )
+        return JSONResponse({'message': f"{ofc_doc_id} deleted from index {index_name}"}, status_code=200)
+    
     def search(self, index_name, query, top_k=5, filter = None, include_values=False, include_metadata=False):
         if index_name not in self.list_index_names():
             return JSONResponse({'message': f"Index {index_name} does not exist"}, status_code=400)
