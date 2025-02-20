@@ -10,3 +10,5 @@ class User(BaseModel):
     middle_name: Optional[str] = None
     email: str
     phone_number: Optional[str] = None
+    is_super_admin: bool = False
+    

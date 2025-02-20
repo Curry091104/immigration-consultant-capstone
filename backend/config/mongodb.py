@@ -6,8 +6,8 @@ dotenv.load_dotenv()
 
 def connect():
     MONGO_URI = os.getenv('MONGO_URI')
-    print(f"Connecting to {MONGO_URI}")
     client = MongoClient(MONGO_URI)
+    print("Connected to MongoDB")
     db = client['immigration-db']
     return db
 

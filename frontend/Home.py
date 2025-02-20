@@ -8,7 +8,7 @@ def configue():
     st.set_page_config(
         page_title="IRIS - Home Page",
         page_icon="🍁",
-        layout="centered",
+        layout="wide",
     )
 
         

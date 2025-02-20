@@ -374,6 +374,7 @@ inputs = {}
 async def main():
     while True:
         try:
+            print("\n\n")
             user_input = input("Enter your question: ")
             if user_input == "q":
                 print("Goodbye!")
@@ -381,7 +382,33 @@ async def main():
             inputs['question'] = user_input
             inputs['sender'] = "user"
             async for output in agents.astream(inputs, config):
-                print(output)
+                if 'conversation_agent' in output.keys():
+                    if 'generation' in output['conversation_agent'].keys():
+                        print(output['conversation_agent']['generation'])
+                    else:
+                        print("The question has been given to decision agent.")
+                elif 'decision_agent' in output.keys():
+                    print(output['decision_agent']['category'])
+                elif 'faq_agent' in output.keys():
+                    if output['faq_agent']['documents'] == []:
+                        print("No answer found in FAQ. Handled by Document Search Agent.")
+                    else:
+                        print(output['faq_agent']['documents']['page_content'])
+                elif 'document_search_agent' in output.keys():
+                    if 'documents' in output['document_search_agent'].keys():
+                        print("Answer found") # Because of the length of the answer, it is not printed here.
+                    else:
+                        print(output['document_search_agent']['request_user'])
+                elif 'cross_check_agent' in output.keys():
+                    if output['cross_check_agent']['receiver'] == 'conversation_agent':
+                        print(output['cross_check_agent']['revised_message'])
+                    else:
+                        print(output['cross_check_agent']['generation'])
+                elif 'crs_links_agent' in output.keys():
+                    if 'crs_links' in output['crs_links_agent'].keys():
+                        print(output['crs_links_agent']['crs_links'])
+                    else:
+                        print(output['crs_links_agent']['request_user'])
         except Exception as e:
             print(e)
             break

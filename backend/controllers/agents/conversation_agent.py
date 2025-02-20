@@ -56,6 +56,7 @@ class ConversationAgent:
 
         ### **Strict Classification Rules**
         1️⃣ ❌ DO NOT answer any question that is NOT related to international student matters.
+        ❌ You MUST not answer any inquiry directly.
         ✅ You may respond to greetings (e.g., "Hello", "How are you?").
         ❌ You MUST classfify 'None' (do not classify as 'general' or 'decision_agent') if the inquiry is not related to international students or immigration like study permits, visas, or IRCC, pgwp, work permits, etc.
             For example:
@@ -78,7 +79,7 @@ class ConversationAgent:
         3️⃣ ✅ Any meaningful inquiry mentioning "CRS score", "CRS ranking", or "Express Entry" must ALWAYS be classified as 'decision_agent' if it relates to international students.
         4️⃣ ✅ If the inquiry is clearly related to international students like study permits, visas, or IRCC, classify it as 'decision_agent'.
         5️⃣ ❌ If the inquiry is clearly NOT related to international students, classify it as 'None' and do not respond.
-        6️⃣ ❓ If the question is related to IRCC but is unclear or lacks important details, classify it as 'decision_agent' and ask the user for clarification.
+        6️⃣ ❓ If the question is related to IRCC but is unclear or lacks important details, which means it is too broad based on your thoughts, classify it as 'general' and ask the user for clarification, do not answer directly.
         7️⃣ ❓ About greeting messages, for example, "Hello", "How are you?", you should answer like "I'm here to help you with your questions about international students and immigration."
 
 
@@ -107,7 +108,7 @@ class ConversationAgent:
         ```
         Category: <general or decision_agent or none>
         Reason: <Brief explanation why this category was chosen>
-        Revised Inquiry: <Revised Inquiry ONLY> *** Revised Inquiry MUST be different from the original inquiry*** Return "None" if the inquiry is not revised
+        Revised Inquiry: <Revised Inquiry ONLY> *** Revised Inquiry MUST be different from the original inquiry*** Return "None" if the inquiry is not revised and the inquiry is general, please do so
         Reason for Revision: <Brief explanation why the inquiry was revised or not> even if the inquiry is not revised.
         ```
         
@@ -356,6 +357,7 @@ class ConversationAgent:
         ```
         Reformatted Response: "I couldn't find an answer to your question. Could you rephrase it or provide more details? I'll do my best to assist!"
         ```
+        ** Do not need to add Reference in this case. **
 
         Otherwise, reformat or summarize the response accordingly.
         
@@ -378,7 +380,7 @@ class ConversationAgent:
         1️⃣ Summarize the document_search_agent response but do not cut off any important information.
         2️⃣ Embed the hyperlinks in the terms correctly.
         3️⃣ Do not add any additional content to the response.
-        4️⃣ Make sure all the information is clear and easy to understand. Your response shhould be matched at least 80% with the original document.
+        4️⃣ Make sure all the information is clear and easy to understand. Your response should be matched at least 80% with the original document.
         5️⃣ Give as much detailed information as possible, but do not make it too long.
         6️⃣ Always include the reference to the source.
         

@@ -45,13 +45,22 @@ class MyPinecone:
             return JSONResponse({'message': f"Index {index_name} does not exist"}, status_code=400)
         
         index = self.pinecone_client.Index(index_name)
-        index.delete(
-            filter = {
-                "ofc_doc_id": {"$eq": ofc_doc_id}
-            }
-        )
-        return JSONResponse({'message': f"{ofc_doc_id} deleted from index {index_name}"}, status_code=200)
-    
+        try:
+            filter_stuff = {"ofc_doc_id": ofc_doc_id}
+            
+            # List vector ids to be deleted
+            vector_ids = index.query(id="a44c6712-ed7f-466f-ad32-37b7a0083762", filter=filter_stuff, top_k=9999)
+            matches = vector_ids['matches']
+            matched_ids = [match['id'] for match in matches]
+            
+            # Delete vectors
+            index.delete(ids=matched_ids)
+            
+            return JSONResponse({'message': f"ofc_doc_id {ofc_doc_id} has been deleted from index {index_name}"}, status_code=200)
+        except PineconeException as e:
+            print(e)
+            return JSONResponse({'message': f"Error deleting {ofc_doc_id} from index {index_name}"}, status_code=400)
+        
     def search(self, index_name, query, top_k=5, filter = None, include_values=False, include_metadata=False):
         if index_name not in self.list_index_names():
             return JSONResponse({'message': f"Index {index_name} does not exist"}, status_code=400)

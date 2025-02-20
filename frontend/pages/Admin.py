@@ -12,7 +12,7 @@ from streamlit_card import card
 def admin_run():
     #! Check authentication
     initialize_session_state()
-    st.set_page_config(page_title="Admin", page_icon="🔒")
+    st.set_page_config(page_title="Admin", page_icon="🔒", layout="wide")
     if st.session_state.page == ADMIN_DASHBOARD:
         admin_dashboard()
     elif st.session_state.page == UPLOAD_PDF_PAGE:
@@ -32,7 +32,22 @@ def on_card_click(page_name):
 def admin_dashboard():
     with st.container():
         
-        st.title("Admin Dashboard")
+        # Custom CSS to center the title
+        st.markdown(
+            """
+            <style>
+            .title {
+                text-align: center;
+                font-size: 36px;
+                font-weight: bold;
+            }
+            </style>
+            """,
+            unsafe_allow_html=True
+        )
+
+        # Display the centered title
+        st.markdown('<h1 class="title">Admin Dashboard</h1>', unsafe_allow_html=True)
         
         p1, p2 = st.columns(2)
         

@@ -133,11 +133,6 @@ def on_submit(option, update_pdf_id, category, skip_tags, inline_txt_removed, up
 
 def handle_response():
     if st.session_state.processing_done and st.session_state.error == False:
-        success_message = st.success("✅ PDF has been successfully uploaded. You are being redirected to the edit page.")
-        time.sleep(2)
-        success_message.empty()
-        st.session_state.processing_done = False
-        
         # Redirect to the edit extracted PDF page after successful upload
         st.session_state.page = "edit_extracted_pdf_page"
         st.rerun()
