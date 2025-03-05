@@ -22,7 +22,7 @@ class DocumentSearchAgent:
         output_search = json.loads(found_docs.body)
         answers = []
         for match in output_search['results']['matches']:
-            if match['score'] > 0.6:
+            if match['score'] > 0.7:
                 answers.append(match.get('metadata'))
             else:
                 continue

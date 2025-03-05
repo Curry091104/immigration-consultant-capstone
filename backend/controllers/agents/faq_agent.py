@@ -4,20 +4,35 @@ import os
 sys.path.append(os.path.join(os.getcwd()))
 
 from config.mypinecone import MyPinecone
+from controllers.query_saving import save_query
+from models.history_query import HistoryQuery
+import datetime
 import json
+import asyncio
 
 class FAQAgent:
     def __init__(self):
         self.pinecone = MyPinecone()
     
-    def get_answer(self, query, index_name = "faqs", top_k=1, filter = None, include_values=False, include_metadata=True):
+    def get_answer(self, query, category, index_name = "faqs", top_k=1, filter = None, include_values=False, include_metadata=True):
         found_doc = self.pinecone.search(index_name, query, top_k, filter, include_values, include_metadata)
         if found_doc.status_code == 200:
             output_search = json.loads(found_doc.body)
             matches = output_search['results']['matches']
             if matches[0]['score'] > 0.87:
                 return matches[0].get('metadata')
-            return "Not found"
+            else:
+                new_history_query_data = HistoryQuery(
+                    query = query,
+                    category=category,
+                    timestamp = datetime.datetime.now().isoformat(),
+                    clustered=False
+                )
+                new_query = asyncio.run(save_query(new_history_query_data))
+                if new_query.get('error'):
+                    return new_query
+                else:
+                    return "Not found"
         else:
             raise RuntimeError(json.loads(found_doc.body).get('message'))
     

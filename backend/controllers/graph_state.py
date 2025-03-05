@@ -223,7 +223,7 @@ def faq_retrieval(state, **kwargs):
     question = state['question']
     category = state['category']
     # filter_pinecone_search = {"tags": {"$in": [category]}}
-    answer = faq_agent.get_answer(question, filter=None)
+    answer = faq_agent.get_answer(question, category = category, filter=None)
     if answer == "Not found":
         return {
             'question': question,
