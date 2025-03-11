@@ -1,4 +1,5 @@
 import streamlit as st
+from auth.SessionManager import SessionManager
 
 def home_page():
     configue()
@@ -12,5 +13,6 @@ def configue():
     )
 
         
-if __name__ == "__main__":
-    home_page()
+
+session_manager = SessionManager()
+home_page()

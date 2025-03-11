@@ -5,26 +5,55 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import streamlit as st
 from admin_stuff.pdf_upload_pages.upload_pdf_page import upload_pdf_page
+from admin_stuff.login_signup.login_page import login_page
+from admin_stuff.login_signup.signup_page import signup_page
 from admin_stuff.pdf_upload_pages.edit_extracted_pdf_page import edit_extracted_pdf_page
+from admin_stuff.account_mgnt_page.acc_mgnt_page import account_mgnt_page
+from admin_stuff.security_pages.change_password_page import security_page
+from admin_stuff.faq_upload_pages.faq_upload import upload_faq_page
+from auth.user_authentication import on_logout
+from streamlit_session_browser_storage import SessionStorage
 from screens import *
 from streamlit_card import card
 
 def admin_run():
-    #! Check authentication
     initialize_session_state()
-    st.set_page_config(page_title="Admin", page_icon="🔒", layout="wide")
-    if st.session_state.page == ADMIN_DASHBOARD:
-        admin_dashboard()
-    elif st.session_state.page == UPLOAD_PDF_PAGE:
-        upload_pdf_page()
-    elif st.session_state.page == EDIT_EXTRACTED_PDF_PAGE:
-        edit_extracted_pdf_page()
-    st.sidebar.button("🚪Logout")
+    if st.session_state.page == LOGIN_PAGE:
+        st.set_page_config(page_title="Admin", page_icon="🔒", layout="centered")
+        login_page()
+        
+    else:
+        st.set_page_config(page_title="Admin", page_icon="🔓", layout="wide")
+        if st.session_state.page == ADMIN_DASHBOARD:
+            admin_dashboard()
+        elif st.session_state.page == UPLOAD_PDF_PAGE:
+            upload_pdf_page()
+        elif st.session_state.page == EDIT_EXTRACTED_PDF_PAGE:
+            edit_extracted_pdf_page()
+        elif st.session_state.page == UPLOAD_FAQ_PAGE:
+            upload_faq_page()
+        elif st.session_state.page == ACCOUNT_MGNT_PAGE:
+            account_mgnt_page()
+        elif st.session_state.page == SECURITY_PAGE:
+            security_page()
+        elif st.session_state.page == SIGNUP_PAGE:
+            signup_page()
+        st.sidebar.button(
+            "🚪Logout", 
+            on_click=on_logout
+        )
     
         
 def initialize_session_state():
+    ssbs = SessionStorage()
+    session_data = ssbs.getItem("saved_session_data")
     if 'page' not in st.session_state:
-        st.session_state.page = ADMIN_DASHBOARD
+        if session_data is None or session_data == None:
+            st.session_state.page = LOGIN_PAGE
+        else:
+            st.session_state.page = ADMIN_DASHBOARD
+    if 'error' not in st.session_state:
+        st.session_state.error = False
         
 def on_card_click(page_name):
     st.session_state.page = page_name
@@ -55,14 +84,14 @@ def admin_dashboard():
             card(
                 title="Upload PDF Document",
                 text="",
-                on_click=lambda: on_card_click("upload_pdf_page"),
+                on_click=lambda: on_card_click(UPLOAD_PDF_PAGE),
             )
             
         with p2:
             card(
                 title = "Upload FAQ",
                 text = "",
-                on_click = lambda: on_card_click("upload_faq_page"),
+                on_click = lambda: on_card_click(UPLOAD_FAQ_PAGE),
             )
             
         p3, p4 = st.columns(2)
@@ -71,14 +100,14 @@ def admin_dashboard():
             card(
                 title = "Manage Accounts",
                 text = "",
-                on_click = lambda: on_card_click("manage_accounts_page"),
+                on_click = lambda: on_card_click(ACCOUNT_MGNT_PAGE),
             )
             
         with p4:
             card(
                 title = "Security Settings",
                 text = "",
-                on_click = lambda: on_card_click("security_page"),
+                on_click = lambda: on_card_click(SECURITY_PAGE),
             )
     
 if __name__ == "__main__":

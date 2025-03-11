@@ -1,7 +1,13 @@
+import os 
+import sys
+
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..'))
+
 import streamlit as st
 import requests
 import time
 import dotenv
+from Home import session_manager
 import os
 
 dotenv.load_dotenv()
@@ -103,7 +109,8 @@ def on_save_changes(ofc_doc_id, docs):
     with st.spinner("Please wait..."):
         st.session_state.error = False
         try:
-            response = requests.post("http://localhost:8000/api/save-pdf-to-pinecone", headers=headers, json=data)
+            session = session_manager.get_session()
+            response = session.post("http://localhost:8000/api/save-pdf-to-pinecone", headers=headers, json=data)
             st.session_state.backend_response = response.json()
             if response.status_code != 201:
                 st.session_state.error = True

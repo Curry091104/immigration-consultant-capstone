@@ -1,8 +1,14 @@
+import os 
+import sys
+
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..'))
+
 import streamlit as st
 import requests
 import dotenv
 import os
 import time
+from Home import session_manager
 
 dotenv.load_dotenv()
 
@@ -121,7 +127,8 @@ def on_submit(option, update_pdf_id, category, skip_tags, inline_txt_removed, up
         
         with st.spinner("PDF is being processed..."):
             try:
-                response = requests.post("http://localhost:8000/api/upload-pdf", headers=headers, files=file, data=data)
+                session = session_manager.get_session()
+                response = session.post("http://localhost:8000/api/upload-pdf", headers=headers, files=file, data=data)
                 st.session_state.backend_response = response.json()
                 if response.status_code != 201:
                     st.session_state.error = True
