@@ -5,7 +5,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 sys.path.append(os.path.join(os.getcwd(), 'immigration-consultant-capstone'))
 
 
-from fastapi import File, UploadFile, Form, APIRouter, Depends, Body
+from fastapi import File, UploadFile, Form, APIRouter, Depends, Body, Request
 from config.mypinecone import MyPinecone
 from fastapi.responses import JSONResponse
 from typing import List
@@ -22,9 +22,13 @@ admin_api_key = os.getenv('ADMIN_API_KEY')
 # Function to return the processed text to check before saving
 
 @router.post("/upload-pdf")
-async def upload_pdf(pdf_file: UploadFile = File(...), skip_tags: List[str] = Form([]), category: List[str] = Form([]), txt_removed: List[str] = Form([]), update_pdf_id: str = Form(None), x_api_key: str = Depends(validate_admin_api_key)):
+async def upload_pdf(request: Request, pdf_file: UploadFile = File(...), skip_tags: List[str] = Form([]), category: List[str] = Form([]), txt_removed: List[str] = Form([]), update_pdf_id: str = Form(None), x_api_key: str = Depends(validate_admin_api_key)):
     if not x_api_key:
         return JSONResponse({'error': 'Invalid API Key'}, status_code=401)
+
+    token = request.cookies.get('access_token')
+    if not token:
+        return JSONResponse({'error': 'Invalid Token'}, status_code=401)
     
     else:
         file_name = pdf_file.filename
@@ -47,9 +51,12 @@ async def upload_pdf(pdf_file: UploadFile = File(...), skip_tags: List[str] = Fo
     
     
 @router.post("/save-pdf-to-pinecone")
-def save_pdf_to_pinecone(docs: List[dict] = Body(...), ofc_doc_id: str = Body(...), x_api_key: str = Depends(validate_admin_api_key)):
+def save_pdf_to_pinecone(request: Request, docs: List[dict] = Body(...), ofc_doc_id: str = Body(...), x_api_key: str = Depends(validate_admin_api_key)):
     if not x_api_key:
         return JSONResponse({'error': 'Invalid API Key'}, status_code=401)
+    token = request.cookies.get('access_token')
+    if not token:
+        return JSONResponse({'error': 'Invalid Token'}, status_code=401)
     else:
         try:
             final_docs = convert_to_langchain_docformat(docs, ofc_doc_id)

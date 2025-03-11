@@ -1,11 +1,21 @@
 from fastapi import FastAPI, HTTPException
 from motor.motor_asyncio import AsyncIOMotorClient
+from fastapi.middleware.cors import CORSMiddleware
 from config.mongodb import db
 import dotenv
 import os
 
 dotenv.load_dotenv()
 app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000", "https://localhost:3000", "http://localhost:8501", "https://localhost:8501"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 
 MONGO_URI = os.getenv('MONGO_URI')
 if not MONGO_URI:
