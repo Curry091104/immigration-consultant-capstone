@@ -1,3 +1,4 @@
+# All the screen names are defined here
 UPLOAD_PDF_PAGE = "upload_pdf_page"
 UPLOAD_FAQ_PAGE = "upload_faq_page"
 EDIT_EXTRACTED_PDF_PAGE = "edit_extracted_pdf_page"
