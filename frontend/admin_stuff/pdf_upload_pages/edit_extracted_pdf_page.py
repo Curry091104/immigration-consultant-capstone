@@ -8,6 +8,7 @@ import requests
 import time
 import dotenv
 from Home import session_manager
+from screens import *
 import os
 
 dotenv.load_dotenv()
@@ -124,11 +125,13 @@ def on_save_changes(ofc_doc_id, docs):
         time.sleep(1.5)
         success_message.empty()
         st.session_state.processing_done = False
-        st.session_state.page = "upload_pdf_page"
+        st.session_state.page = UPLOAD_PDF_PAGE
    
 def on_remove_doc(doc):
     st.session_state.docs.remove(doc)
 
 def go_back():
-    st.session_state.page = "upload_pdf_page"
+    st.session_state.processing_done = False
+    st.session_state.__delitem__("docs")
+    st.session_state.page = UPLOAD_PDF_PAGE
             

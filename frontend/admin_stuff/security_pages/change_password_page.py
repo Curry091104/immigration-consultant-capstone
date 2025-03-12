@@ -38,7 +38,7 @@ def get_user_inputs():
         type="password"
     )
     
-    st.button("Change Password", on_click=lambda: change_password(current_password, new_password, confirm_new_password))
+    st.button("Submit", on_click=lambda: change_password(current_password, new_password, confirm_new_password))
     
     
 def change_password(current_password, new_password, confirm_new_password):

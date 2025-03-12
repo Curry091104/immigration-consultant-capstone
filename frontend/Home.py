@@ -3,11 +3,11 @@ from auth.SessionManager import SessionManager
 
 def home_page():
     configue()
-    st.title("IRIS - Home Page")
+    st.title("IRIS")
 
 def configue():
     st.set_page_config(
-        page_title="IRIS - Home Page",
+        page_title="IRIS",
         page_icon="🍁",
         layout="wide",
     )
