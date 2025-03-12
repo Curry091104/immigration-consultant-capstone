@@ -130,9 +130,9 @@ def on_submit(username, password, confirm_password, first_name, last_name, middl
         "password": password,
         "first_name": first_name,
         "last_name": last_name,
-        "middle_name": middle_name,
+        "middle_name": middle_name if middle_name != "" else None,
         "email": email,
-        "phone_number": phone_number,
+        "phone_number": phone_number if phone_number != "" else None,
         "is_super_admin": is_super_admin
     }
     
@@ -145,7 +145,7 @@ def on_submit(username, password, confirm_password, first_name, last_name, middl
     
     response = session.post("http://localhost:8000/auth/signup", json=user, headers=headers, cookies={"access_token": token})
     
-    if response.status_code == 200:
+    if response.status_code == 201:
         success_msg = st.success("User created successfully.")
         time.sleep(2)
         success_msg.empty()

@@ -65,7 +65,13 @@ def change_password(current_password, new_password, confirm_new_password):
     
     
 def go_back():
-    st.session_state.page = ADMIN_DASHBOARD
+    if 'prev_page' in st.session_state:
+        prev_page = st.session_state.prev_page
+        st.session_state.__delitem__('prev_page')
+        st.session_state.page = prev_page
+        
+    else:
+        st.session_state.page = ADMIN_DASHBOARD
     
 if __name__ == "__main__":
     security_page()

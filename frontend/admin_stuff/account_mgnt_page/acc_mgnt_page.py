@@ -11,6 +11,7 @@ from Home import session_manager
 from operation_buttons import reset_password_button, delete_account_button, change_password_button
 import dotenv
 import os
+from auth.user_authentication import is_super_admin
 
 
 dotenv.load_dotenv()
@@ -32,7 +33,6 @@ def display_accounts():
     
     if response.status_code == 403 or response.status_code == 401:
         st.error("Unauthorized access. Please login again.")
-        return
     elif response.status_code == 200:
         users = response.json()
         owner_account = find_owner_account(users)
@@ -52,15 +52,27 @@ def display_accounts():
             
 def display_owner_account(owner_account):
     with st.container():
-        st.markdown(f"""
-        <h3>Your Account</h3>
-        <div class="account-card">
-            <b>Username:</b> {owner_account["username"]}<br>
-            <b>Name:</b> {owner_account["first_name"]} {owner_account["last_name"]}<br>
-        </div>
-        """,
-        unsafe_allow_html=True
-        )
+        st.markdown("<h3>Your Account</h3>", unsafe_allow_html=True)
+        p1, p2 = st.columns(2)
+        with p1:
+            st.markdown(f"""
+                <div class="account-card">
+                    <b>Username:</b> {owner_account["username"]}<br>
+                    <b>Name:</b> {owner_account["first_name"]} {owner_account["last_name"]}<br>
+                </div>
+                """,
+                unsafe_allow_html=True
+                )
+            
+        with p2:
+            col1, col2, col3 = st.columns([1, 1, 1])
+            with col1:
+                change_password_button(disable=False)
+            with col2:
+                reset_password_button(owner_account["username"], disable=True)
+            with col3:
+                delete_account_button(owner_account["username"], disable=True)
+            
 
 def display_other_accounts(accounts):
     with st.container():
@@ -69,15 +81,30 @@ def display_other_accounts(accounts):
             st.html("""<p class="account-card">No accounts found.</p>""")
         else:
             for account in accounts:
-                st.write(account)
-                st.markdown(f"""
-                <div class="account-card">
-                    <b>Username:</b> {account["username"]}<br>
-                    <b>Name:</b> {account["first_name"]} {account["last_name"]}<br>
-                </div>
-                """,
-                unsafe_allow_html=True
-                )
+                p1, p2 = st.columns(2)
+                with p1:
+                    st.markdown(f"""
+                    <div class="account-card">
+                        <b>Username:</b> {account["username"]}<br>
+                        <b>Name:</b> {account["first_name"]} {account["last_name"]}<br>
+                    </div>
+                    """,
+                    unsafe_allow_html=True
+                    )
+                    
+                with p2:
+                    if is_super_admin(): 
+                        disable = False 
+                    else: 
+                        disable = True
+                        
+                    col1, col2, col3 = st.columns([1, 1, 1])
+                    with col1:
+                        change_password_button(disable=True, key=f'{account["username"]}_change_password')
+                    with col2:
+                        reset_password_button(account["username"], disable=disable, key=f'{account["username"]}_reset_password')
+                    with col3:
+                        delete_account_button(account["username"], disable=disable, key=f'{account["username"]}_delete_account')
 
     
     
