@@ -46,6 +46,12 @@ uvicorn main:app --reload
 ```
 
 ### Contributors
+- Tuong Nguyen Pham - [@Curry091104](https://github.com/Curry091104)
+- Ngoc Quynh Nhu Nguyen - [@NhuNhuNguyen](https://github.com/NhuNhuNguyen)
+- Kwok Wing Tang - [@Patrickccca](https://github.com/Patrickccca)
+- Joan Suaverdez - [@jsuaverd](https://github.com/jsuaverd)
+- Huaye Zhan - [@howardzhan12](https://github.com/howardzhan12)
+- Dongheun Yang - [@DongheunDanielYang](https://github.com/DongheunDanielYang)
 
 ### License
 This project is licensed under the [Creative Commons Attribution-NonCommercial 4.0 International License](LICENSE)
