@@ -14,7 +14,7 @@ from controllers.data_processing import convert_faq_to_langchain_docformat
 router = APIRouter(prefix="/api")
 
 @router.post("/create-faq")
-def create_faq(request: Request, faq_docs: List[str] = Form(...), index_name: str = Form('faqs'), x_api_key: str = Depends(validate_admin_api_key)):
+def create_faq(request: Request, faq_docs: List[dict] = Form(...), index_name: str = Form('faqs'), x_api_key: str = Depends(validate_admin_api_key)):
     if not x_api_key:
         return JSONResponse({'error': 'Invalid API Key'}, status_code=401)
     token = request.cookies.get('access_token')
