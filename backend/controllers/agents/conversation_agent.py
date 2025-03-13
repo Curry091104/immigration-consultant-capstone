@@ -1,5 +1,5 @@
 from langchain_huggingface import HuggingFaceEndpoint, ChatHuggingFace
-from langchain.schema import HumanMessage, AIMessage
+from langchain.schema import HumanMessage
 import os
 from dotenv import load_dotenv
 import googletrans
@@ -15,11 +15,11 @@ class ConversationAgent:
 
     def __init__(self, max_tokens=1028, temperature=0.5): # max_tokens = 512, temperature = 0.5, top_k = 1, top_p = 0.9, frequency_penalty = 0.0, presence_penalty = 0.0
         # Initialize the LLM Model
-        self.model_name = "mistralai/Mistral-7B-Instruct-v0.2"
-        #self.model_name = "meta-llama/Meta-Llama-3-8B-Instruct"
+        HUGGINGFACEHUB_API_TOKEN = os.getenv("HUGGINGFACEHUB_API_TOKEN")
+        self.model_name = "mistralai/Mistral-7B-Instruct-v0.3"
         self.llm = HuggingFaceEndpoint(
             repo_id=self.model_name,
-            api_key=os.getenv("HUGGINGFACEHUB_API_TOKEN"),
+            huggingfacehub_api_token=HUGGINGFACEHUB_API_TOKEN,
             max_new_tokens=max_tokens,
             temperature=temperature
         )
