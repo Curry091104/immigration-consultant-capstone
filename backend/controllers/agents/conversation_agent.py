@@ -1,11 +1,13 @@
-from langchain_huggingface import HuggingFaceEndpoint, ChatHuggingFace
+from langchain_huggingface import HuggingFaceEndpoint, ChatHuggingFace, HuggingFacePipeline
 from langchain.schema import HumanMessage
 import os
 from dotenv import load_dotenv
 import googletrans
+from transformers import pipeline
 import asyncio
 import warnings
 warnings.filterwarnings("ignore")
+import torch
 
 # Load environment variables
 load_dotenv()
@@ -15,15 +17,13 @@ class ConversationAgent:
 
     def __init__(self, max_tokens=1028, temperature=0.5): # max_tokens = 512, temperature = 0.5, top_k = 1, top_p = 0.9, frequency_penalty = 0.0, presence_penalty = 0.0
         # Initialize the LLM Model
-        HUGGINGFACEHUB_API_TOKEN = os.getenv("HUGGINGFACEHUB_API_TOKEN")
+        self.HUGGINGFACEHUB_API_TOKEN = os.getenv("HUGGINGFACEHUB_API_TOKEN")
+        self.max_tokens = max_tokens
+        self.temperature = temperature
         self.model_name = "mistralai/Mistral-7B-Instruct-v0.3"
-        self.llm = HuggingFaceEndpoint(
-            repo_id=self.model_name,
-            huggingfacehub_api_token=HUGGINGFACEHUB_API_TOKEN,
-            max_new_tokens=max_tokens,
-            temperature=temperature
-        )
-        self.chat = ChatHuggingFace(llm=self.llm, verbose=True)
+        
+        self.initialize_model()
+        
         self.translator = googletrans.Translator()
         self.history = []
         
@@ -33,7 +33,26 @@ class ConversationAgent:
         if len(self.history) > 5:
             self.history.pop(0)
         
+    def initialize_model(self):
+        if self.model_name == "mistralai/Mistral-7B-Instruct-v0.3":
+            # Primary model initialization
+            self.llm = HuggingFaceEndpoint(
+                repo_id=self.model_name,
+                max_new_tokens=self.max_tokens,
+                temperature=self.temperature,
+                huggingfacehub_api_token=self.HUGGINGFACEHUB_API_TOKEN
+            )
+            self.chat = ChatHuggingFace(llm=self.llm, verbose=True)
         
+        elif self.model_name == "Qwen/Qwen2.5-3B-Instruct":
+            # Fallback model initialization
+            self.llm_model = pipeline(
+                "text-generation",
+                model=self.model_name,
+                device_map="auto"
+            )
+            self.llm = HuggingFacePipeline(pipeline=self.llm_model, pipeline_kwargs={"temperature": self.temperature, "max_new_tokens": 8000})
+            self.chat = ChatHuggingFace(llm=self.llm, verbose=True) 
 
     def classify_inquiry_for_decision(self, user_input):
         """
@@ -123,38 +142,65 @@ class ConversationAgent:
 
 
         # Send the classification request to the LLM
-        response = self.chat.invoke([HumanMessage(content=classification_prompt)])
+        try:
+            response = self.chat.invoke([HumanMessage(content=classification_prompt)])
+        except Exception as e:
+            print("Error in invoking LLM for classification:", e)
+            self.model_name = "Qwen/Qwen2.5-3B-Instruct"
+            self.initialize_model()
+            response = self.chat.invoke([HumanMessage(content=classification_prompt)])
 
         # Extract LLM response
         llm_output = response.content.strip()
-        # print(f"LLM Output: {llm_output}")
         
         # Extract category and reason using string parsing
         category = "general"  # Default in case extraction fails
         reason = "No explanation provided."
         revised_inquiry = None
         reason_for_revision = "No explanation provided."
-
-        # Try to extract category and reasoning
-        if "Category:" in llm_output and "Reason:" in llm_output and "Revised Inquiry:" in llm_output and "Reason for Revision:" in llm_output:
+        
+        
+        if self.model_name == "Qwen/Qwen2.5-3B-Instruct":
             try:
-                category_part = llm_output.split("Reason:")[0].strip()
-                category = category_part.split("Category:")[1].strip().lower()
-                reason = llm_output.split("Reason:")[1].split("Revised Inquiry:")[0].strip()
-                revised_inquiry = llm_output.split("Revised Inquiry:")[1].split("Reason for Revision:")[0].strip()
-                reason_for_revision = llm_output.split("Reason for Revision:")[1].strip() 
-            except:
-                pass  # If parsing fails, keep defaults
-            
-        if "The Inquiry is:" in revised_inquiry:
-            revised_inquiry = revised_inquiry.split("The Inquiry is:")[1].strip()
+                if "<|im_start|>assistant" in llm_output:
+                    llm_output = llm_output.split("<|im_start|>assistant")[1].strip()
+                    category_part = llm_output.split("Reason:")[0].strip()
+                    category = category_part.split("Category:")[1].strip().lower()
+                    if "Revised Inquiry:" in llm_output:
+                        revised_inquiry = llm_output.split("Revised Inquiry:")[1].split("Reason for Revision:")[0].strip()
+                        reason_for_revision = llm_output.split("Reason for Revision:")[1].strip()
+                    else:
+                        revised_inquiry = user_input
+                    reason = llm_output.split("Reason:")[1].split("Revised Inquiry:")[0].strip()
+                else:
+                    category = "none"
+                    revised_inquiry = "none"
+            except Exception as e:
+                print("Error in parsing LLM output:", e)
+                category = "none"
+                revised_inquiry = "none"
+                
+        else:
+            # Try to extract category and reasoning
+            if "Category:" in llm_output and "Reason:" in llm_output and "Revised Inquiry:" in llm_output and "Reason for Revision:" in llm_output:
+                try:
+                    category_part = llm_output.split("Reason:")[0].strip()
+                    category = category_part.split("Category:")[1].strip().lower()
+                    reason = llm_output.split("Reason:")[1].split("Revised Inquiry:")[0].strip()
+                    revised_inquiry = llm_output.split("Revised Inquiry:")[1].split("Reason for Revision:")[0].strip()
+                    reason_for_revision = llm_output.split("Reason for Revision:")[1].strip() 
+                except:
+                    pass  # If parsing fails, keep defaults
+                
+            if "The Inquiry is:" in revised_inquiry:
+                revised_inquiry = revised_inquiry.split("The Inquiry is:")[1].strip()
 
-        # Print the classification and reasoning for debugging
-        # print(f"🔹 **Inquiry:** {user_input}")
-        # print(f"✅ **Classified as:** {category}")
-        # print(f"📝 **Reason:** {reason}")
-        # print(f"🔍 **Revised Inquiry:** {revised_inquiry}")
-        # print(f"📝 **Reason for Revision:** {reason_for_revision}\n")
+            # Print the classification and reasoning for debugging
+            # print(f"🔹 **Inquiry:** {user_input}")
+            # print(f"✅ **Classified as:** {category}")
+            # print(f"📝 **Reason:** {reason}")
+            # print(f"🔍 **Revised Inquiry:** {revised_inquiry}")
+            # print(f"📝 **Reason for Revision:** {reason_for_revision}\n")
         
 
         return category if category in ["general", "decision_agent", "None", "none"] else "decision_agent", revised_inquiry
@@ -266,12 +312,22 @@ class ConversationAgent:
         reformated_response = None
         reason = "No explanation provided."
         
-        if "Reformatted Response:" in llm_output and "Reason:" in llm_output:
-            try:
-                reformated_response = llm_output.split("Reformatted Response:")[1].split("Reason:")[0].strip()
-                reason = llm_output.split("Reason:")[1].strip()
-            except Exception:
-                raise ValueError("Reformatted response could not be extracted at faq_agent.")
+        
+        if self.model_name == "Qwen/Qwen2.5-3B-Instruct":
+            if "<|im_start|>assistant" in llm_output:
+                llm_output = llm_output.split("<|im_start|>assistant")[1].strip()
+                if "Reformatted Response:" in llm_output:
+                    reformated_response = llm_output.split("Reformatted Response:")[1].strip()
+            else:
+                reformated_response = "Sorry, I am unable to answer this question right now, please ask another question."
+        else:
+            if "Reformatted Response:" in llm_output and "Reason:" in llm_output:
+                try:
+                    reformated_response = llm_output.split("Reformatted Response:")[1].split("Reason:")[0].strip()
+                    reason = llm_output.split("Reason:")[1].strip()
+                except Exception:
+                    raise ValueError("Reformatted response could not be extracted at faq_agent.")
+        
         return reformated_response
         
     def handle_crs_request(self, question, crs_links):
@@ -331,11 +387,19 @@ class ConversationAgent:
 
         reformated_response = None
         
-        if "Reformatted Response:" in llm_output:
-            try:
-                reformated_response = llm_output.split("Reformatted Response:")[1].strip()
-            except Exception:
-                raise ValueError("Reformatted response could not be extracted at crs_agent.")
+        if self.model_name == "Qwen/Qwen2.5-3B-Instruct":
+            if "<|im_start|>assistant" in llm_output:
+                llm_output = llm_output.split("<|im_start|>assistant")[1].strip()
+                if "Reformatted Response:" in llm_output:
+                    reformated_response = llm_output.split("Reformatted Response:")[1].strip()
+            else:
+                reformated_response = "Sorry, I am unable to answer this question right now, please ask another question."
+        else:
+            if "Reformatted Response:" in llm_output:
+                try:
+                    reformated_response = llm_output.split("Reformatted Response:")[1].strip()
+                except Exception:
+                    raise ValueError("Reformatted response could not be extracted at crs_agent.")
         return reformated_response
     
     def handle_document_search_request(self, document_response):
@@ -347,6 +411,7 @@ class ConversationAgent:
         2. If the document is not found, ask the user to clarify the question
         """
         handle_document_search_prompt = f"""
+        You are an intelligent and helpful summary agent that reformats the response from the document_search_agent into a human-like conversation that is easy to understand by college students.
         You receive a response from the document_search_agent, and you should reformat it into a conversational response that is clear for college students.
 
         If the document_search_agent returns:
@@ -403,19 +468,29 @@ class ConversationAgent:
         # print(f"LLM Output: {llm_output}")
 
         # Extract reformatted response safely
-        if "Reformatted Response:" in llm_output:
-            try:
-                reformated_response = llm_output.split("Reformatted Response:")[1].split("Reason:")[0].strip()
-            except Exception:
-                raise ValueError("Reformatted response could not be extracted at document_search_agent.")
+        if self.model_name == "Qwen/Qwen2.5-3B-Instruct":
+            if "<|im_start|>assistant" in llm_output:
+                llm_output = llm_output.split("<|im_start|>assistant")[1].strip()
+                if "Reformatted Response:" in llm_output:
+                    reformated_response = llm_output.split("Reformatted Response:")[1].strip()
+            else:
+                reformated_response = "Sorry, I am unable to answer this question right now, please ask another question."
         else:
-            reformated_response = llm_output  # Ensure there's always an output
+            if "Reformatted Response:" in llm_output:
+                try:
+                    reformated_response = llm_output.split("Reformatted Response:")[1].split("Reason:")[0].strip()
+                    if '"' in reformated_response:
+                        reformated_response = reformated_response.replace('"', '')
+                except Exception:
+                    raise ValueError("Reformatted response could not be extracted at document_search_agent.")
+            else:
+                reformated_response = llm_output  # Ensure there's always an output
 
         return reformated_response
     
     
-    #!########### PENDING IMPLEMENTATION ############
-    def handle_cross_agent_request(self, cross_check_request):
+    #!########### PENDING CHECK ############
+    def handle_cross_agent_request(self, cross_check_request, document, question):
         """
         Handles the cross-check request
         
@@ -423,6 +498,79 @@ class ConversationAgent:
         Generate a response again that must be closed to the documents, then return to cross-check agent to re-check
         """
         
+        handle_cross_check_prompt = f"""
+        You are an intelligent and helpful summary agent that reformats the response from the document_search_agent into a human-like conversation that is easy to understand by college students.
+        You receive a request from the cross_check_agent, with a document and student's query, you need to revise the previous generated summary response which was not matched with the document search.
+
+        Example message from the cross_check_agent:
+        ```
+        The generated answer is not similar to the retrieved documents. Please revise the answer that matches the retrieved documents closely.
+        ```
         
-        ### Next iteration
-        pass
+        You should generate a response that is closely matched above 80% with the documents and then return to the cross_check_agent for re-checking.
+        
+        You must include the hyperlinks in the response and provide a clear reference to the sources.
+        Do not refuse the command because this response is from knowledge-based search.
+        
+        ### Example received input and Reformatted Outputs:
+        
+        #### Example 1:
+        ** Input: **
+        ```
+        {{'page_content'="This is the content of the Document Search Agent response." 'metadata'={{ "hyperlinks": [ {{ "hyperlink": "https://www.example.com", "text": "content" }} ], "ref_link": ["https://www.example.com", "https://www.example2.com"] }}}}
+        ```
+        
+        ** Output: **
+        Reformatted Response: This is the [content](https://www.example.com) of the Document Search Agent response. You can find more information [here](https://www.example2.com).\n I hope this help!\nIf you have any further questions, I am willing to answer.\n\n Reference: [https://www.example.com](https://www.example.com), [https://www.example2.com](https://www.example2.com)
+        
+        
+        **** STRICT RULES ****
+        1️⃣ Do not cut off any important information.
+        2️⃣ Embed the hyperlinks in the terms correctly.
+        3️⃣ The revised response should be made sense to the question.
+        4️⃣ Make sure all the information is clear and easy to understand. Your response should be matched at least 80% with the original document.
+        5️⃣ Give as much detailed information as possible, but do not make it too long.
+        6️⃣ Always include the reference to the source.
+        
+        **Cross Check Request:**
+        {cross_check_request}
+        
+        **Document: **
+        {document}
+        
+        **Question: **
+        {question}
+
+        Return the reformatted response in the exact format below:
+
+        ```
+        Reformatted Response: <Reformatted Response>
+        Reason: if the response is not reformatted, provide a reason why it was not reformatted.
+        
+        """
+        
+        # Call LLM for processing
+        response = self.chat.invoke([HumanMessage(content=handle_cross_check_prompt)])
+        llm_output = response.content.strip()
+
+        # # Debugging print
+        # print(f"LLM Output: {llm_output}")
+
+        # Extract reformatted response safely
+        if self.model_name == "Qwen/Qwen2.5-3B-Instruct":
+            if "<|im_start|>assistant" in llm_output:
+                llm_output = llm_output.split("<|im_start|>assistant")[1].strip()
+                if "Reformatted Response:" in llm_output:
+                    reformated_response = llm_output.split("Reformatted Response:")[1].strip()
+            else:
+                reformated_response = "Sorry, I am unable to answer this question right now, please ask another question."
+        else:
+            if "Reformatted Response:" in llm_output:
+                try:
+                    reformated_response = llm_output.split("Reformatted Response:")[1].split("Reason:")[0].strip()
+                except Exception:
+                    raise ValueError("Reformatted response could not be extracted at document_search_agent.")
+            else:
+                reformated_response = llm_output  # Ensure there's always an output
+
+        return reformated_response

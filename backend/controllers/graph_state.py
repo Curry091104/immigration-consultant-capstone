@@ -1,15 +1,20 @@
-from typing import TypedDict, List, Optional
+import sys
 import os
+
+sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
+
+from typing import TypedDict, List, Optional
 from langgraph.graph import StateGraph, END, START
-from agents.document_search_agent import DocumentSearchAgent
+from controllers.agents.document_search_agent import DocumentSearchAgent
 from controllers.agents.conversation_agent import ConversationAgent
-from agents.faq_agent import FAQAgent
-from agents.cross_check_agent import CrossCheckAgent
-from agents.decision_agent import DecisionAgent
-from agents.crs_links_agent import CRSLinksAgent
+from controllers.agents.faq_agent import FAQAgent
+from controllers.agents.cross_check_agent import CrossCheckAgent
+from controllers.agents.decision_agent import DecisionAgent
+from controllers.agents.crs_links_agent import CRSLinksAgent
+import googletrans
 from langchain.schema import HumanMessage
 from langgraph.checkpoint.memory import MemorySaver
-from data_processing import extract_keys_hyperlinks_pinecone
+from controllers.data_processing import extract_keys_hyperlinks_pinecone
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
 import langsmith as ls
@@ -29,6 +34,8 @@ faq_agent = FAQAgent()
 cross_check_agent = CrossCheckAgent()
 dec_agent = DecisionAgent()
 crs_links_agent = CRSLinksAgent()
+translator = googletrans.Translator()
+detected_lang = None
 
 class GraphState(TypedDict):
     sender: Optional[str]
@@ -38,6 +45,7 @@ class GraphState(TypedDict):
     documents: Optional[dict]
     crs_links: Optional[List[str]]
     cross_check_needed: Optional[bool]
+    time_cross_check: Optional[int]
     revised_message: Optional[str]
     request_user: Optional[str]
     category: Optional[str]
@@ -45,13 +53,14 @@ class GraphState(TypedDict):
     
 @ls.traceable(langsmith_client, name="conversation_agent")
 async def conversation_agent(state, **kwargs):
-    print("\n############################################ Conversation Agent ############################################\n")
     question = state['question']
     sender = state['sender']
     category = state.get('category', None)
     if sender not in ['document_search_agent', 'faq_agent', 'cross_check_agent', 'crs_links_agent']:
         response = await conv_agent.handle_user_request(question)
         if response[1] != "general" or response[1].lower() != "none":
+            global detected_lang
+            detected_lang = response[0]
             if response[0] == "fr" and response[3] == None:
                 question = response[2]
             elif response[0] == "fr" and response[3] != None:
@@ -74,8 +83,24 @@ async def conversation_agent(state, **kwargs):
                 'receiver': '_end_',
             }
         elif response[1] == "general":
-            detected_lang = response[0]
-            prompt = f"Answer in {detected_lang}: {question}"
+            prompt = f"""
+            Greet back the user and tell them that you are here to help them with their questions related to international students in Canada about study permit, PGWP, and visa.
+            
+            Example: 
+            User: Hi!
+            Agent: Hello! I am here to help you with your questions related to international students in Canada about study permit, PGWP, and visa. How can I help you today?
+            
+            # Strict Rules:
+            - Do not talk about any other topics, ONLY talk about international students in Canada about study permit, PGWP, and visa.
+            - Do not ask for any personal information.
+            - Do not ask for any sensitive information.
+            - Do not ask for any financial information.
+            
+            
+            ** User's question: **
+            {question}
+            
+            """
             agent_response = conv_agent.chat.invoke([HumanMessage(content=prompt)])
             return {
                 'question': question, 
@@ -93,17 +118,23 @@ async def conversation_agent(state, **kwargs):
         cross_check_needed = state['cross_check_needed']
         #! Implement text generation in this line
         documents = state['documents']
-        
-        # print("###############################################")
-        # print(documents)
-        # print("###############################################")
-        
+        if 'time_cross_check' not in state.keys():
+            state['time_cross_check'] = 0
         if cross_check_needed:
             generation = conv_agent.handle_document_search_request(document_response=documents)
+            if generation == "Sorry, I am unable to answer this question right now, please ask another question.":
+                return {
+                    'question': question, 
+                    'generation': generation,
+                    'category': category,
+                    'sender': 'conversation_agent',
+                    'receiver': '_end_',
+                }
             return {
                 'question': question, 
                 'generation': generation,
                 'documents': documents,
+                'time_cross_check': state['time_cross_check'],
                 'category': category,
                 'sender': 'conversation_agent',
                 'receiver': 'cross_check_agent'
@@ -120,16 +151,18 @@ async def conversation_agent(state, **kwargs):
             }
     elif sender == 'cross_check_agent':
         revised_message = state['revised_message']
-        #! Implement text generation in this line
-        generation = "generated answer"
+        documents = state['documents']
+        generation = conv_agent.handle_cross_agent_request(revised_message, document=documents, question=question)
         return {
             'question': question, 
             'generation': generation,
-            'documents': state['documents'],
+            'documents': documents,
+            'time_cross_check': state['time_cross_check'],
             'category': category,
             'sender': 'conversation_agent',
             'receiver': 'cross_check_agent'
         }
+        
     elif sender == 'faq_agent':
         faq_docs = state['documents']
         generation = conv_agent.handle_faq_request(faq_docs)
@@ -154,7 +187,6 @@ async def conversation_agent(state, **kwargs):
 
 @ls.traceable(langsmith_client, name="decision_agent")
 def decision_agent(state, **kwargs):
-    print("\n############################################ Decision Agent ############################################\n")
     question = state['question']
     category = dec_agent.classify_question(question)
     is_sp_pgwp_visa = dec_agent.is_the_query_related_to_study_permit_pgwp_or_visa(question)
@@ -175,10 +207,9 @@ def decision_agent(state, **kwargs):
 
 @ls.traceable(langsmith_client, name="document_search_agent")
 def rag_retrieval(state, **kwargs):
-    print("\n############################################ Document Search Agent ############################################\n")
     question = state['question']
     category = state['category']
-    # filter_pinecone_search = {"tags": {"$in": [category]}}
+    filter_pinecone_search = {"tags": {"$in": [category.lower()]}}
     documents = None
     answer = document_search_agent.get_answers(question, filter=None)
     if answer == "Answer not found":
@@ -218,12 +249,11 @@ def rag_retrieval(state, **kwargs):
         }
 
 @ls.traceable(langsmith_client, name="faq_agent")
-def faq_retrieval(state, **kwargs):
-    print("\n############################################ FAQ Agent ############################################\n")
+async def faq_retrieval(state, **kwargs):
     question = state['question']
     category = state['category']
-    # filter_pinecone_search = {"tags": {"$in": [category]}}
-    answer = faq_agent.get_answer(question, category = category, filter=None)
+    filter_pinecone_search = {"tags": {"$in": [category.lower()]}}
+    answer = await faq_agent.get_answer(question, category = category, filter=None)
     if answer == "Not found":
         return {
             'question': question,
@@ -258,14 +288,37 @@ def faq_retrieval(state, **kwargs):
     
 @ls.traceable(langsmith_client, name="cross_check_agent")
 def cross_check(state, **kwargs):
-    print("\n############################################ Cross Check Agent ############################################\n")
     question = state['question']
+    state['time_cross_check'] += 1
+    time_cross_check = state['time_cross_check']
     category = state['category']
     generation = state['generation']
     documents = state['documents']
     refined_doc = documents['page_content']
     similarity_score = cross_check_agent.cross_check(generation, refined_doc)
-    if similarity_score > 0.75:
+    if time_cross_check <= 2:
+        if similarity_score > 0.75:
+            return {
+                'question': question,
+                'generation': generation,
+                'category': category,
+                'revise_message': None,
+                'sender': 'cross_check_agent',
+                'receiver': '_end_',
+            }
+        else:
+            revised_message = "The generated answer is not similar to the retrieved documents. Please revise the answer that matches the retrieved documents closely."
+            return {
+                'question': question, 
+                'documents': documents,
+                'category': category,
+                'time_cross_check': time_cross_check,
+                'revised_message': revised_message,
+                'sender': 'cross_check_agent',
+                'receiver': 'conversation_agent'
+            } 
+    else:
+        generation = "Sorry, I am unable to answer this question right now, please ask another question."
         return {
             'question': question,
             'generation': generation,
@@ -273,20 +326,9 @@ def cross_check(state, **kwargs):
             'sender': 'cross_check_agent',
             'receiver': '_end_',
         }
-    else:
-        revised_message = "The generated answer is not similar to the retrieved documents. Please revise the answer that matches the retrieved documents closely."
-        return {
-            'question': question, 
-            'documents': documents,
-            'category': category,
-            'revised_message': revised_message,
-            'sender': 'cross_check_agent',
-            'receiver': 'conversation_agent'
-        } 
         
 @ls.traceable(langsmith_client, name="crs_links_agent")
 def crs_agent(state, **kwargs):
-    print("\n############################################ CRS Links Agent ############################################\n")
     question = state['question']
     category = state['category']
     crs_links = crs_links_agent.get_recommendations(question)
@@ -347,10 +389,18 @@ immigration_graph.add_conditional_edges(
         "conversation_agent": "conversation_agent"
     }
 )
+immigration_graph.add_conditional_edges(
+    "cross_check_agent",
+    lambda state: state['receiver'],
+    {
+        "conversation_agent": "conversation_agent",
+        "_end_": END
+    }
+)
 
 immigration_graph.add_edge("crs_links_agent", "conversation_agent")
 immigration_graph.add_edge("document_search_agent", "conversation_agent")
-immigration_graph.add_edge("cross_check_agent", END)
+
 
 
 agents = immigration_graph.compile(checkpointer=memory)
@@ -368,49 +418,95 @@ agents = immigration_graph.compile(checkpointer=memory)
 # plt.axis("off")  # Hide axes
 # plt.show()
 
-config = {"configurable": {"thread_id": "1"}} # Add thread_id to the config, must be unique for each conversation
+config = {"configurable": {"thread_id": '1'}} # Add thread_id to the config, must be unique for each conversation
 inputs = {}
 
-async def main():
-    while True:
-        try:
-            print("\n\n")
-            user_input = input("Enter your question: ")
-            if user_input == "q":
-                print("Goodbye!")
-                break
-            inputs['question'] = user_input
-            inputs['sender'] = "user"
-            async for output in agents.astream(inputs, config):
-                if 'conversation_agent' in output.keys():
-                    if 'generation' in output['conversation_agent'].keys():
-                        print(output['conversation_agent']['generation'])
-                    else:
-                        print("The question has been given to decision agent.")
-                elif 'decision_agent' in output.keys():
-                    print(output['decision_agent']['category'])
-                elif 'faq_agent' in output.keys():
-                    if output['faq_agent']['documents'] == []:
-                        print("No answer found in FAQ. Handled by Document Search Agent.")
-                    else:
-                        print(output['faq_agent']['documents']['page_content'])
-                elif 'document_search_agent' in output.keys():
-                    if 'documents' in output['document_search_agent'].keys():
-                        print("Answer found") # Because of the length of the answer, it is not printed here.
-                    else:
-                        print(output['document_search_agent']['request_user'])
-                elif 'cross_check_agent' in output.keys():
-                    if output['cross_check_agent']['receiver'] == 'conversation_agent':
-                        print(output['cross_check_agent']['revised_message'])
-                    else:
-                        print(output['cross_check_agent']['generation'])
-                elif 'crs_links_agent' in output.keys():
-                    if 'crs_links' in output['crs_links_agent'].keys():
-                        print(output['crs_links_agent']['crs_links'])
-                    else:
-                        print(output['crs_links_agent']['request_user'])
-        except Exception as e:
-            print(e)
-            break
 
-asyncio.run(main())
+async def run_agent(user_input, iris_id = "1"):
+    inputs['sender'] = "user"
+    inputs['question'] = user_input
+    config['configurable']['thread_id'] = iris_id
+    try:
+        async for output in agents.astream(inputs, config):
+            print(output)
+            if 'conversation_agent' in output.keys():
+                if 'generation' in output['conversation_agent'].keys():
+                        generation = output['conversation_agent']['generation']
+                        if "<|im_start|>assistant" in generation:
+                            generation = generation.split("<|im_start|>assistant")[1]
+                        if detected_lang == "fr":
+                            output = await translator.translate(generation, src='en', dest='fr')
+                            return output.text
+                        else:
+                            return generation
+            elif 'cross_check_agent' in output.keys():
+                if output['cross_check_agent']['receiver'] != 'conversation_agent':
+                    if detected_lang == "fr":
+                        output = await translator.translate(output['cross_check_agent']['generation'], src='en', dest='fr')
+                        return output.text
+                    else:
+                        return output['cross_check_agent']['generation']
+                else:
+                    continue
+            else:
+                continue
+    except Exception as e:
+        print(e)
+        return "An error occurred. Please try again."
+        
+
+# async def main():
+#     while True:
+#         try:
+#             print("\n\n")
+#             user_input = input("Enter your question: ")
+#             if user_input == "q":
+#                 print("Goodbye!")
+#                 break
+#             inputs['question'] = user_input
+#             inputs['sender'] = "user"
+#             async for output in agents.astream(inputs, config):
+#                 print(output)
+#                 if 'conversation_agent' in output.keys():
+#                     if 'generation' in output['conversation_agent'].keys():
+#                         generation = output['conversation_agent']['generation']
+#                         if "<|im_start|>assistant" in generation:
+#                             generation = generation.split("<|im_start|>assistant")[1]
+#                         if detected_lang == "fr":
+#                             output = await translator.translate(generation, src='en', dest='fr')
+#                             print(output.text)
+#                         else:
+#                             print(generation)
+#                     else:
+#                         print("The question has been given to decision agent.")
+#                 elif 'decision_agent' in output.keys():
+#                     print(output['decision_agent']['category'])
+#                 elif 'faq_agent' in output.keys():
+#                     if output['faq_agent']['documents'] == []:
+#                         print("No answer found in FAQ. Handled by Document Search Agent.")
+#                     else:
+#                         print(output['faq_agent']['documents']['page_content'])
+#                 elif 'document_search_agent' in output.keys():
+#                     if 'documents' in output['document_search_agent'].keys():
+#                         print("Answer found") # Because of the length of the answer, it is not printed here.
+#                     else:
+#                         print(output['document_search_agent']['request_user'])
+#                 elif 'cross_check_agent' in output.keys():
+#                     if output['cross_check_agent']['receiver'] == 'conversation_agent':
+#                         print(output['cross_check_agent']['revised_message'])
+#                     else:
+#                         if detected_lang == "fr":
+#                             output = await translator.translate(output['cross_check_agent']['generation'], src='en', dest='fr')
+#                             print(output.text)
+#                         else:
+#                             print(output['cross_check_agent']['generation'])
+#                 elif 'crs_links_agent' in output.keys():
+#                     if 'crs_links' in output['crs_links_agent'].keys():
+#                         print(output['crs_links_agent']['crs_links'])
+#                     else:
+#                         print(output['crs_links_agent']['request_user'])
+#         except Exception as e:
+#             print(e)
+#             break
+
+# asyncio.run(main())

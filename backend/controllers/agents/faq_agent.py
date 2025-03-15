@@ -14,7 +14,7 @@ class FAQAgent:
     def __init__(self):
         self.pinecone = MyPinecone()
     
-    def get_answer(self, query, category, index_name = "faqs", top_k=1, filter = None, include_values=False, include_metadata=True):
+    async def get_answer(self, query, category, index_name = "faqs", top_k=1, filter = None, include_values=False, include_metadata=True):
         found_doc = self.pinecone.search(index_name, query, top_k, filter, include_values, include_metadata)
         if found_doc.status_code == 200:
             output_search = json.loads(found_doc.body)
@@ -28,7 +28,7 @@ class FAQAgent:
                     timestamp = datetime.datetime.now().isoformat(),
                     clustered=False
                 )
-                new_query = asyncio.run(save_query(new_history_query_data))
+                new_query = await save_query(new_history_query_data)
                 if new_query.get('error'):
                     return new_query
                 else:

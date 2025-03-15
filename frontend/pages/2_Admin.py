@@ -16,6 +16,7 @@ from streamlit_session_browser_storage import SessionStorage
 from screens import *
 from streamlit_card import card
 
+
 def admin_run():
     initialize_session_state()
     if st.session_state.page == LOGIN_PAGE:

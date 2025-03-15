@@ -84,7 +84,7 @@ def get_user_input():
             
             updated_docs.append({
                 "id": doc['id'],
-                "tags": st.session_state[doc_key]["tags"],
+                "tags": st.session_state[doc_key]["tags"].lower().split(", "),
                 "content": st.session_state[doc_key]["content"],
                 "hyperlinks": st.session_state[doc_key]["hyperlinks"],
                 "ref_link": st.session_state[doc_key]["ref_link"]

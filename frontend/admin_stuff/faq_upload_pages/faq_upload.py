@@ -42,7 +42,7 @@ def get_user_inputs():
                 hyperlinks.append(combined_hyperlink)
                 
         # Add the faq doc to faq_docs
-        faq_doc["tags"] = categories
+        faq_doc["tags"] = categories.lower().split(", ")
         faq_doc["faq_id"] = faq_id
         faq_doc["question"] = question
         faq_doc["answer"] = answer
