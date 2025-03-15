@@ -145,7 +145,7 @@ class ConversationAgent:
         try:
             response = self.chat.invoke([HumanMessage(content=classification_prompt)])
         except Exception as e:
-            print("Error in invoking LLM for classification:", e)
+            print("Cannot connect to Mistral, trying Qwen model...")
             self.model_name = "Qwen/Qwen2.5-3B-Instruct"
             self.initialize_model()
             response = self.chat.invoke([HumanMessage(content=classification_prompt)])
@@ -176,7 +176,6 @@ class ConversationAgent:
                     category = "none"
                     revised_inquiry = "none"
             except Exception as e:
-                print("Error in parsing LLM output:", e)
                 category = "none"
                 revised_inquiry = "none"
                 

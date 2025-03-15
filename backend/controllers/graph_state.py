@@ -428,7 +428,7 @@ async def run_agent(user_input, iris_id = "1"):
     config['configurable']['thread_id'] = iris_id
     try:
         async for output in agents.astream(inputs, config):
-            print(output)
+            # print(output)
             if 'conversation_agent' in output.keys():
                 if 'generation' in output['conversation_agent'].keys():
                         generation = output['conversation_agent']['generation']
