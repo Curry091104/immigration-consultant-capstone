@@ -59,8 +59,14 @@ def get_consultation_page():
                 st.markdown(prompt)
             st.session_state.messages.append({"role": "human", "text": prompt, "avatar": "🧑‍🎓"})
             
+            waiting_message = st.empty()
+            waiting_message.markdown("IRIS is typing...")
+            
             response = asyncio.run(get_iris_response(prompt))
+            
+            
             with st.chat_message("assistant", avatar="🤖"):
+                waiting_message.empty()
                 st.markdown(response)
             st.session_state.messages.append({"role": "assistant", "text": response, "avatar": "🤖"})
             
