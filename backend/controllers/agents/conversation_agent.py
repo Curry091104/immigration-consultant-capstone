@@ -3,7 +3,7 @@ from langchain.schema import HumanMessage
 import os
 from dotenv import load_dotenv
 import googletrans
-from transformers import pipeline
+from transformers import pipeline, AutoModelForCausalLM, AutoTokenizer
 import asyncio
 import warnings
 warnings.filterwarnings("ignore")
@@ -14,18 +14,33 @@ load_dotenv()
 
 class ConversationAgent:
     """Main agent responsible for handling multi-agent communication."""
-
-    def __init__(self, max_tokens=1028, temperature=0.5): # max_tokens = 512, temperature = 0.5, top_k = 1, top_p = 0.9, frequency_penalty = 0.0, presence_penalty = 0.0
+    local_tokenizer = None
+    local_model = None
+    
+    def __init__(self, max_tokens=1028, temperature=0.5):
         # Initialize the LLM Model
+        # print("Loading local model...")
+        # print(self.__class__.local_model, self.__class__.local_tokenizer)
+        
         self.HUGGINGFACEHUB_API_TOKEN = os.getenv("HUGGINGFACEHUB_API_TOKEN")
         self.max_tokens = max_tokens
         self.temperature = temperature
         self.model_name = "mistralai/Mistral-7B-Instruct-v0.3"
         
+        
         self.initialize_model()
         
         self.translator = googletrans.Translator()
         self.history = []
+        
+    @classmethod
+    def load_local_model(cls):
+        try:
+            cls.local_model = AutoModelForCausalLM.from_pretrained("Qwen/Qwen2.5-3B-Instruct", device_map="cuda")
+            cls.local_tokenizer = AutoTokenizer.from_pretrained("Qwen/Qwen2.5-3B-Instruct")
+        except Exception as e:
+            print("Failed to load local model.")
+            raise e
         
     def update_conversation_history(self, user_input):
         self.history.append({"user": user_input})
@@ -48,11 +63,11 @@ class ConversationAgent:
             # Fallback model initialization
             self.llm_model = pipeline(
                 "text-generation",
-                model=self.model_name,
-                device_map="auto"
+                model=self.__class__.local_model,
+                tokenizer=self.__class__.local_tokenizer,
             )
             self.llm = HuggingFacePipeline(pipeline=self.llm_model, pipeline_kwargs={"temperature": self.temperature, "max_new_tokens": 8000})
-            self.chat = ChatHuggingFace(llm=self.llm, verbose=True) 
+            self.chat = ChatHuggingFace(llm=self.llm, verbose=True)
 
     def classify_inquiry_for_decision(self, user_input):
         """

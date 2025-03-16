@@ -34,9 +34,9 @@ st.markdown(
 
 def get_consultation_page():
     get_iris_id()
-    
-    if 'messages' not in st.session_state:
-        st.session_state.messages = []
+        
+    if st.session_state.error_chat:
+        st.session_state.disabled_chat = True
         
     for message in st.session_state.messages:
         with st.chat_message(message["role"], avatar=message["avatar"]):
@@ -47,7 +47,7 @@ def get_consultation_page():
             st.markdown("Hello! I am IRIS, your virtual assistant. I am here to help you with your queries. Please type your query below.")
         st.session_state.messages.append({"role": "assistant", "text": "Hello! I am IRIS, your virtual assistant. I am here to help you with your queries. Please type your query below.", "avatar": "🤖"})
     
-    if prompt := st.chat_input("Type your message here..."):
+    if prompt := st.chat_input("Type your message here...", disabled=st.session_state.disabled_chat):
         try:
             if any(word in prompt.lower() for word in ["bye", "goodbye", "exit", "quit", "thank", "thanks"]):
                 with st.chat_message("assistant", avatar="🤖"):
@@ -66,12 +66,23 @@ def get_consultation_page():
             
             
         except Exception as e:
+            st.session_state.error_chat = True
+            st.session_state.disabled_chat = True
             st.error(f"An error occurred: {e}")
             st.write("Please refresh the page and try again.")
             return
 
     
 def get_iris_id():
+    if 'messages' not in st.session_state:
+        st.session_state.messages = []
+        
+    if 'error_chat' not in st.session_state:
+        st.session_state.error_chat = False
+    
+    if 'disabled_chat' not in st.session_state:
+        st.session_state.disabled_chat = False
+        
     response = requests.get("http://localhost:8000/api/iris-id")
     if 'iris_id' not in st.session_state:
         st.session_state.iris_id = response.json()["iris_id"]
@@ -83,7 +94,8 @@ async def get_iris_response(input):
         return
     async with aiohttp.ClientSession() as session:
         async with session.get(f"http://localhost:8000/iris/{st.session_state.iris_id}?user_input={input}") as response:
-            response = await response.json()["agent_response"]
+            response = await response.json()
+            response = response["agent_response"]
             if '"' in response:
                 if response[0] == '"':
                     response = response[1:]

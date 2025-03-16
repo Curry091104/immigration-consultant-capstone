@@ -26,6 +26,10 @@ warnings.filterwarnings("ignore")
 LANGSMITH_API_KEY = os.getenv("LANGSMITH_API_KEY")
 LANGSMITH_ENDPOINT = os.getenv("LANGSMITH_ENDPOINT")
 
+print("Loading local LLM...")
+ConversationAgent.load_local_model()
+print("Local LLM loaded successfully")
+
 memory = MemorySaver()
 langsmith_client = ls.Client(api_url=LANGSMITH_ENDPOINT, api_key=LANGSMITH_API_KEY)
 conv_agent = ConversationAgent()

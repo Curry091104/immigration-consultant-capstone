@@ -5,6 +5,7 @@ from config.mongodb import db
 import dotenv
 import os
 
+
 dotenv.load_dotenv()
 app = FastAPI()
 
@@ -22,8 +23,8 @@ if not MONGO_URI:
     raise ValueError("MONGO_URI is not set in environment variables")
 
 mongo_client = AsyncIOMotorClient(MONGO_URI)
-
-
+    
+    
 @app.on_event("shutdown")
 def close_connection():
     print("Closing connection")
