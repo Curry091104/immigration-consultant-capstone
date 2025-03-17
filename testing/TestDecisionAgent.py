@@ -12,8 +12,6 @@ from backend.controllers.agents.decision_agent import DecisionAgent
 class TestDecisionAgent(unittest.TestCase):
 
     def setUp(self):
-        # Create dummy CSV files for testing
-        
         path = os.path.join(parent_dir, 'backend')
 
         self.agent = DecisionAgent(path)
@@ -36,4 +34,4 @@ class TestDecisionAgent(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    unittest.main(argv=['first-arg-is-ignored'], exit=False)
+    unittest.main(exit=False)
