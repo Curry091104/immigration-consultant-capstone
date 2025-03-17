@@ -57,6 +57,8 @@ def get_consultation_page():
                 with st.chat_message("assistant", avatar="🤖"):
                     st.markdown("Please don’t hesitate to use our live chat service again in future – we’re always here to help. I hope to hear from you soon. Take care!")
                 st.session_state.messages.append({"role": "assistant", "text": "Please don’t hesitate to use our live chat service again in future – we’re always here to help. I hope to hear from you soon. Take care!", "avatar": "🤖"})
+                
+                st.session_state.disabled_chat = True
                 return
             
             with st.chat_message("human", avatar="🧑‍🎓"):

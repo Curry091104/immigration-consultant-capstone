@@ -434,30 +434,37 @@ async def run_agent(user_input, iris_id = "1"):
     config['configurable']['thread_id'] = iris_id
     try:
         async for output in agents.astream(inputs, config):
-            logging.info("\nOutput from the agent: ")
-            logging.debug(output)
-            logging.info("\n")
-            if 'conversation_agent' in output.keys():
-                if 'generation' in output['conversation_agent'].keys():
-                        generation = output['conversation_agent']['generation']
-                        if "<|im_start|>assistant" in generation:
-                            generation = generation.split("<|im_start|>assistant")[1]
+            try:
+                logging.info("\nOutput from the agent: ")
+                logging.debug(output)
+                logging.info("\n")
+                if 'conversation_agent' in output.keys():
+                    if 'generation' in output['conversation_agent'].keys():
+                            generation = output['conversation_agent']['generation']
+                            if "<|im_start|>assistant" in generation:
+                                generation = generation.split("<|im_start|>assistant")[1]
+                            if detected_lang == "fr":
+                                output = await translator.translate(generation, src='en', dest='fr')
+                                return output.text
+                            else:
+                                return generation
+                elif 'cross_check_agent' in output.keys():
+                    if output['cross_check_agent']['receiver'] != 'conversation_agent':
                         if detected_lang == "fr":
-                            output = await translator.translate(generation, src='en', dest='fr')
+                            output = await translator.translate(output['cross_check_agent']['generation'], src='en', dest='fr')
                             return output.text
                         else:
-                            return generation
-            elif 'cross_check_agent' in output.keys():
-                if output['cross_check_agent']['receiver'] != 'conversation_agent':
-                    if detected_lang == "fr":
-                        output = await translator.translate(output['cross_check_agent']['generation'], src='en', dest='fr')
-                        return output.text
+                            return output['cross_check_agent']['generation']
                     else:
-                        return output['cross_check_agent']['generation']
+                        continue
                 else:
                     continue
-            else:
-                continue
+            except GeneratorExit:
+                logging.warning("GeneratorExit ignored")
+                break
+    except GeneratorExit:
+        logging.warning("GeneratorExit ignored. Continuing execution.")
+        return None
     except Exception as e:
         print(e)
         return "An error occurred. Please try again."
