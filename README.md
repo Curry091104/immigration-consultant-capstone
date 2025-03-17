@@ -21,19 +21,21 @@ git clone https://github.com/Curry091104/immigration-consultant-capstone.git
 
 ** Note: You should create virtual environment folders in both frontend and backend **
 
+Create venv
+```
+python -m venv venv
+venv/Scripts/activate
+```
+
 Frontend
 ```
 cd frontend
-python -m venv venv
-venv/Scripts/activate
 pip install -r requirements.txt
 ```
 
 Backend
 ```
 cd backend
-python -m venv venv
-venv/Scripts/activate
 pip install -r requirements.txt
 ```
 
@@ -42,14 +44,12 @@ To run the project, use the following command: </br></br>
 Frontend
 ```
 cd frontend
-venv/Scripts/activate
 streamlit run Home.py
 ```
 
 Backend
 ```
 cd backend
-venv/Scripts/activate
 uvicorn main:app --reload
 ```
 
