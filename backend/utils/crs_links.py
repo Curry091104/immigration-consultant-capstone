@@ -16,6 +16,12 @@ crs_links = {
             "title": "CRS Score Improvement",
             "url": "https://www.canadim.com/blog/how-to-increase-crs-score/",
             "keywords": ["improve", "increase", "boost", "raise", "points", "score"]
+        },
+        
+        {
+            "title": "How CRS Works in Express Entry",
+            "url": "https://www.canadavisa.com/express-entry-comprehensive-ranking-system.html",
+            "keywords": ["how", "works", "Express Entry", "Comprehensive Ranking System", "CRS", "process"]
         }
     ]
 }

@@ -439,22 +439,25 @@ async def run_agent(user_input, iris_id = "1"):
                 logging.debug(output)
                 logging.info("\n")
                 if 'conversation_agent' in output.keys():
-                    if 'generation' in output['conversation_agent'].keys():
-                            generation = output['conversation_agent']['generation']
-                            if "<|im_start|>assistant" in generation:
-                                generation = generation.split("<|im_start|>assistant")[1]
-                            if detected_lang == "fr":
-                                output = await translator.translate(generation, src='en', dest='fr')
-                                return output.text
-                            else:
-                                return generation
+                    if output['conversation_agent']['receiver'] == '_end_':
+                        if 'generation' in output['conversation_agent'].keys():
+                                generation = output['conversation_agent']['generation']
+                                if "<|im_start|>assistant" in generation:
+                                    generation = generation.split("<|im_start|>assistant")[1]
+                                if detected_lang == "fr":
+                                    output = await translator.translate(generation, src='en', dest='fr')
+                                    yield output.text
+                                else:
+                                    yield generation
+                    else:
+                        continue
                 elif 'cross_check_agent' in output.keys():
                     if output['cross_check_agent']['receiver'] != 'conversation_agent':
                         if detected_lang == "fr":
                             output = await translator.translate(output['cross_check_agent']['generation'], src='en', dest='fr')
-                            return output.text
+                            yield output.text
                         else:
-                            return output['cross_check_agent']['generation']
+                            yield output['cross_check_agent']['generation']
                     else:
                         continue
                 else:
@@ -462,12 +465,13 @@ async def run_agent(user_input, iris_id = "1"):
             except GeneratorExit:
                 logging.warning("GeneratorExit ignored")
                 break
+
     except GeneratorExit:
         logging.warning("GeneratorExit ignored. Continuing execution.")
-        return None
+        yield "An error occurred: GeneratorExit. Please try again."
     except Exception as e:
         print(e)
-        return "An error occurred. Please try again."
+        yield "An error occurred. Please try again."
         
 
 # async def main():
