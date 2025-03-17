@@ -36,7 +36,7 @@ class ConversationAgent:
     @classmethod
     def load_local_model(cls):
         try:
-            cls.local_model = AutoModelForCausalLM.from_pretrained("Qwen/Qwen2.5-3B-Instruct", device_map="cuda")
+            cls.local_model = AutoModelForCausalLM.from_pretrained("Qwen/Qwen2.5-3B-Instruct", device_map="auto")
             cls.local_tokenizer = AutoTokenizer.from_pretrained("Qwen/Qwen2.5-3B-Instruct")
         except Exception as e:
             print("Failed to load local model.")
@@ -49,6 +49,7 @@ class ConversationAgent:
             self.history.pop(0)
         
     def initialize_model(self):
+        print(self.model_name)
         if self.model_name == "mistralai/Mistral-7B-Instruct-v0.3":
             # Primary model initialization
             self.llm = HuggingFaceEndpoint(
@@ -65,6 +66,7 @@ class ConversationAgent:
                 "text-generation",
                 model=self.__class__.local_model,
                 tokenizer=self.__class__.local_tokenizer,
+                device_map="auto"
             )
             self.llm = HuggingFacePipeline(pipeline=self.llm_model, pipeline_kwargs={"temperature": self.temperature, "max_new_tokens": 8000})
             self.chat = ChatHuggingFace(llm=self.llm, verbose=True)
