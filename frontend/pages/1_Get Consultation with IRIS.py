@@ -50,6 +50,10 @@ def get_consultation_page():
     if prompt := st.chat_input("Type your message here...", disabled=st.session_state.disabled_chat):
         try:
             if any(word in prompt.lower() for word in ["bye", "goodbye", "exit", "quit", "thank", "thanks"]):
+                with st.chat_message("human", avatar="🧑‍🎓"):
+                    st.markdown(prompt)
+                st.session_state.messages.append({"role": "human", "text": prompt, "avatar": "🧑‍🎓"})
+                
                 with st.chat_message("assistant", avatar="🤖"):
                     st.markdown("Please don’t hesitate to use our live chat service again in future – we’re always here to help. I hope to hear from you soon. Take care!")
                 st.session_state.messages.append({"role": "assistant", "text": "Please don’t hesitate to use our live chat service again in future – we’re always here to help. I hope to hear from you soon. Take care!", "avatar": "🤖"})

@@ -20,6 +20,7 @@ import matplotlib.image as mpimg
 import langsmith as ls
 from io import BytesIO
 import asyncio
+import logging
 import warnings
 warnings.filterwarnings("ignore")
 
@@ -40,6 +41,7 @@ dec_agent = DecisionAgent()
 crs_links_agent = CRSLinksAgent()
 translator = googletrans.Translator()
 detected_lang = None
+logging.basicConfig(level=logging.DEBUG, format="%(message)s", handlers=[logging.StreamHandler()])
 
 class GraphState(TypedDict):
     sender: Optional[str]
@@ -432,7 +434,9 @@ async def run_agent(user_input, iris_id = "1"):
     config['configurable']['thread_id'] = iris_id
     try:
         async for output in agents.astream(inputs, config):
-            # print(output)
+            logging.info("\nOutput from the agent: ")
+            logging.debug(output)
+            logging.info("\n")
             if 'conversation_agent' in output.keys():
                 if 'generation' in output['conversation_agent'].keys():
                         generation = output['conversation_agent']['generation']
