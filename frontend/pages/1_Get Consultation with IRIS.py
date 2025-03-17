@@ -16,6 +16,13 @@ st.logo(
     size="large"
 )
 
+st.sidebar.title("IRIS Disclaimer")
+st.sidebar.write("""
+                 Please be aware that IRIS chatbot is an automated system, and it may not always
+                provide 100% accurate information. While we strive to provide accurate information,
+                we cannot guarantee the accuracy, completeness, or timeliness of the information provided by IRIS chatbot.
+                 """)
+
 st.markdown(
     """
     <style>

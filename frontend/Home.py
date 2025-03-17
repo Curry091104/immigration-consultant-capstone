@@ -21,7 +21,7 @@ def home_page():
     
 
 def configue():
-    st.sidebar.write("IRIS")
+    pass
     
 def read_css():
     css_path = Path(__file__).parent / "styles.css"

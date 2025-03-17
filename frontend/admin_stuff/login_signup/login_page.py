@@ -38,6 +38,9 @@ def get_user_inputs():
 
 
 def on_submit(username, password):
+    if username == "" or password == "":
+        st.error("Error: Username and password cannot be empty.")
+        return
     form_data = {
         "username": username,
         "password": password
