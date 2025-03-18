@@ -1,7 +1,14 @@
+import os 
+import sys
+
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..'))
+
 import streamlit as st
 import requests
 import time
 import dotenv
+from Home import session_manager
+from screens import *
 import os
 
 dotenv.load_dotenv()
@@ -14,12 +21,12 @@ def edit_extracted_pdf_page():
         if "docs" not in st.session_state:
             st.session_state.docs = st.session_state.backend_response.get("docs")
             
-        get_user_input(st.session_state.docs)
+        get_user_input()
     else:
         st.write("Error: No data found.")
         st.stop()
     
-def get_user_input(docs):
+def get_user_input():
     st.sidebar.button("⬅ Back", on_click=go_back)
     ofc_doc_id = st.text_input(
         "Enter document ID *",
@@ -33,6 +40,11 @@ def get_user_input(docs):
     updated_docs = []
     for doc in st.session_state.docs:
         with st.expander(f"Document ID: {doc['id'] + 1}"):
+            st.button(
+                "🗑️Remove",
+                on_click=lambda doc=doc: on_remove_doc(doc),
+                key=f"remove_doc_{doc['id']}"
+            )
             doc_key = "doc_" + str(doc['id'])
             
             if doc_key not in st.session_state:
@@ -47,6 +59,7 @@ def get_user_input(docs):
             st.session_state[doc_key]["content"] = st.text_area("Content:", st.session_state[doc_key]["content"], key=f"content_{doc['id']}")
             
             st.write("Hyperlinks:")
+            st.write("If you don't want to include a hyperlink, leave the fields empty.")
             updated_hyperlinks = []
             for i, hyperlink in enumerate(doc['hyperlinks']):
                 hyperlink_parts = hyperlink.split(": ")
@@ -60,6 +73,8 @@ def get_user_input(docs):
                     
                 if edited_hyperlink != original_hyperlink or edited_hyperlink_text != original_text:
                     updated_hyperlinks.append(f"{edited_hyperlink}: {edited_hyperlink_text}")
+                elif edited_hyperlink is None or edited_hyperlink == "" or edited_hyperlink_text is None or edited_hyperlink_text == "":
+                    continue
                 else:
                     updated_hyperlinks.append(original_hyperlink + ": " + original_text)
                 
@@ -69,7 +84,7 @@ def get_user_input(docs):
             
             updated_docs.append({
                 "id": doc['id'],
-                "tags": st.session_state[doc_key]["tags"],
+                "tags": st.session_state[doc_key]["tags"].lower().split(", "),
                 "content": st.session_state[doc_key]["content"],
                 "hyperlinks": st.session_state[doc_key]["hyperlinks"],
                 "ref_link": st.session_state[doc_key]["ref_link"]
@@ -82,14 +97,21 @@ def get_user_input(docs):
     )
     
 def on_save_changes(ofc_doc_id, docs):
+    if not ofc_doc_id:
+        st.error("Error: Document ID is required.")
+        return
     data = {
         "docs": docs,
         "ofc_doc_id": ofc_doc_id
     }
+    headers = {
+        "x-api-key": os.getenv("ADMIN_API_KEY")
+    }
     with st.spinner("Please wait..."):
         st.session_state.error = False
         try:
-            response = requests.post("http://localhost:8000/api/save-pdf-to-pinecone", headers=os.getenv("API_KEY"), data=data)
+            session = session_manager.get_session()
+            response = session.post("http://localhost:8000/api/save-pdf-to-pinecone", headers=headers, json=data)
             st.session_state.backend_response = response.json()
             if response.status_code != 201:
                 st.session_state.error = True
@@ -103,8 +125,13 @@ def on_save_changes(ofc_doc_id, docs):
         time.sleep(1.5)
         success_message.empty()
         st.session_state.processing_done = False
-        st.session_state.page = "upload_pdf_page"
+        st.session_state.page = UPLOAD_PDF_PAGE
    
+def on_remove_doc(doc):
+    st.session_state.docs.remove(doc)
+
 def go_back():
-    st.session_state.page = "upload_pdf_page"
+    st.session_state.processing_done = False
+    st.session_state.__delitem__("docs")
+    st.session_state.page = UPLOAD_PDF_PAGE
             

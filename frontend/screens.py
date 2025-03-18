@@ -1,3 +1,9 @@
+# All the screen names are defined here
 UPLOAD_PDF_PAGE = "upload_pdf_page"
+UPLOAD_FAQ_PAGE = "upload_faq_page"
 EDIT_EXTRACTED_PDF_PAGE = "edit_extracted_pdf_page"
 ADMIN_DASHBOARD = "admin_dashboard"
+LOGIN_PAGE = "login_page"
+ACCOUNT_MGNT_PAGE = "account_management_page"
+SIGNUP_PAGE = "signup_page"
+SECURITY_PAGE = "security_page"

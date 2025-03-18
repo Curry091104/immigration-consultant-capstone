@@ -1,20 +1,34 @@
 from fastapi import FastAPI, HTTPException
-from config.mongodb import connect, close
+from motor.motor_asyncio import AsyncIOMotorClient
+from fastapi.middleware.cors import CORSMiddleware
+from config.mongodb import db
+import dotenv
+import os
 
+
+dotenv.load_dotenv()
 app = FastAPI()
 
-mongo_client = None
-db = None
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000", "https://localhost:3000", "http://localhost:8501", "https://localhost:8501"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
-@app.on_event("startup")
-async def startup_event():
-    global mongo_client, db
-    mongo_client = connect()
-    db = mongo_client
+
+MONGO_URI = os.getenv('MONGO_URI')
+if not MONGO_URI:
+    raise ValueError("MONGO_URI is not set in environment variables")
+
+mongo_client = AsyncIOMotorClient(MONGO_URI)
+    
     
 @app.on_event("shutdown")
-async def shutdown_event():
-    close(mongo_client)
+def close_connection():
+    print("Closing connection")
+    mongo_client.close()
 
 @app.get("/")
 def health_check():
