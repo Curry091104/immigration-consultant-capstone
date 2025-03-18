@@ -18,10 +18,12 @@ st.logo(
 
 st.sidebar.title("IRIS Disclaimer")
 st.sidebar.write("""
-                 Please be aware that IRIS chatbot is an automated system, and it may not always
-                provide 100% accurate information. While we strive to provide accurate information,
-                we cannot guarantee the accuracy, completeness, or timeliness of the information provided by IRIS chatbot.
-                 """)
+    <p style="font-size: 1.2rem;">
+        Please be aware that IRIS chatbot is an automated system, and it may not always
+        provide 100% accurate information. While we strive to provide accurate information,
+        we cannot guarantee the accuracy, completeness, or timeliness of the information provided by IRIS chatbot.
+    </p>
+""", unsafe_allow_html=True)
 
 st.markdown(
     """
@@ -49,10 +51,10 @@ def get_consultation_page():
         with st.chat_message(message["role"], avatar=message["avatar"]):
             st.markdown(message["text"])
         
-    if not any(message["text"] == "Hello! I am IRIS, your virtual assistant. I am here to help you with your queries. Please type your query below." for message in st.session_state.messages):
+    if not any(message["text"] == "Hello! I am IRIS, your virtual assistant. I am here to help you with your queries. Before starting, I suggest you to read the IRIS Disclaimer in the left sidebar to understand the terms, conditions, and limitations associated with its use." for message in st.session_state.messages):
         with st.chat_message("assistant", avatar="🤖"):
-            st.markdown("Hello! I am IRIS, your virtual assistant. I am here to help you with your queries. Please type your query below.")
-        st.session_state.messages.append({"role": "assistant", "text": "Hello! I am IRIS, your virtual assistant. I am here to help you with your queries. Please type your query below.", "avatar": "🤖"})
+            st.markdown("Hello! I am IRIS, your virtual assistant. I am here to help you with your queries. Before starting, I suggest you to read the IRIS Disclaimer in the left sidebar to understand the terms, conditions, and limitations associated with its use.")
+        st.session_state.messages.append({"role": "assistant", "text": "Hello! I am IRIS, your virtual assistant. I am here to help you with your queries. Before starting, I suggest you to read the IRIS Disclaimer in the left sidebar to understand the terms, conditions, and limitations associated with its use.", "avatar": "🤖"})
     
     if prompt := st.chat_input("Type your message here...", disabled=st.session_state.disabled_chat):
         try:
