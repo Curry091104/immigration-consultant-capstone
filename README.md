@@ -40,7 +40,8 @@ pip install -r requirements.txt
 To run the project, use the following command: </br></br>
 
 > ** Note **
-> - Make sure you have activated your environment before running
+> - Make sure you have activated your environment before running.
+> - You have .env file with all required keys.
 
 
 Frontend
