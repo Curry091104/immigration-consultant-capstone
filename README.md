@@ -38,6 +38,11 @@ pip install -r requirements.txt
 
 ### Usage
 To run the project, use the following command: </br></br>
+
+> ** Note **
+> - Make sure you have activated your environment before running
+
+
 Frontend
 ```
 cd frontend
