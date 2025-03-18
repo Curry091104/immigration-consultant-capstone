@@ -3,6 +3,7 @@ import requests
 import json
 import asyncio
 import aiohttp
+import time
 
 
 
@@ -52,6 +53,15 @@ def get_consultation_page():
             st.markdown(message["text"])
         
     if not any(message["text"] == "Hello! I am IRIS, your virtual assistant. I am here to help you with your queries. Before starting, I suggest you to read the IRIS Disclaimer in the left sidebar to understand the terms, conditions, and limitations associated with its use." for message in st.session_state.messages):
+        
+        time.sleep(1.5)
+        
+        waiting_message = st.empty()
+        waiting_message.markdown("IRIS is typing...")
+        
+        time.sleep(2)
+        
+        waiting_message.empty()
         with st.chat_message("assistant", avatar="🤖"):
             st.markdown("Hello! I am IRIS, your virtual assistant. I am here to help you with your queries. Before starting, I suggest you to read the IRIS Disclaimer in the left sidebar to understand the terms, conditions, and limitations associated with its use.")
         st.session_state.messages.append({"role": "assistant", "text": "Hello! I am IRIS, your virtual assistant. I am here to help you with your queries. Before starting, I suggest you to read the IRIS Disclaimer in the left sidebar to understand the terms, conditions, and limitations associated with its use.", "avatar": "🤖"})
@@ -95,6 +105,10 @@ def get_consultation_page():
 
     
 def get_iris_id():
+    if 'connection_error' in st.session_state:
+        st.session_state.connection_error.empty()
+        del st.session_state.connection_error
+    
     if 'messages' not in st.session_state:
         st.session_state.messages = []
         
@@ -103,8 +117,17 @@ def get_iris_id():
     
     if 'disabled_chat' not in st.session_state:
         st.session_state.disabled_chat = False
+    
+    if 'connection_error' not in st.session_state:
+        st.session_state.connection_error = None
         
-    response = requests.get("http://localhost:8000/api/iris-id")
+    try:
+        response = requests.get("http://localhost:8000/api/iris-id")
+    except requests.exceptions.ConnectionError:
+        st.session_state.connection_error = st.error("Trying to connect to server...")
+        time.sleep(10)
+        get_iris_id()
+        return
     if 'iris_id' not in st.session_state:
         st.session_state.iris_id = response.json()["iris_id"]
         
