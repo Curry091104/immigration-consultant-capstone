@@ -1,4 +1,4 @@
-# Canadian Immigration Consultant Chatbot
+# Canadian Immigration Consultant Chatbot 🍁🤖
 
 ## Table of Contents
 - [Project Description](#project-description)
@@ -9,6 +9,8 @@
 
 
 ### Project Description
+
+> Pend.
 
 ### Installation
 <b><i>1. Clone the repository: </i></b>
