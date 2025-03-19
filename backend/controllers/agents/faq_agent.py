@@ -34,5 +34,5 @@ class FAQAgent:
                 else:
                     return "Not found"
         else:
-            raise RuntimeError(f'Error from FAQAgent: {json.loads(found_doc.body).get('message')}')
+            raise RuntimeError(f"Error from FAQAgent: {json.loads(found_doc.body).get('message')}")
     
