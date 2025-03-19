@@ -8,6 +8,12 @@ crs_links = {
         
         {
             "title": "CRS Criteria",
+            "url": "https://www.canada.ca/en/immigration-refugees-citizenship/services/immigrate-canada/express-entry/check-score.html#score",
+            "keywords": ["what", "is", "CRS", "Comprehensive Ranking System", "definition"]
+        },
+        
+        {
+            "title": "CRS Criteria",
             "url": "https://www.canada.ca/en/immigration-refugees-citizenship/services/immigrate-canada/express-entry/check-score/crs-criteria.html",
             "keywords": ["criteria", "requirements", "qualifications", "CRS", "Comprehensive Ranking System"]
         },
