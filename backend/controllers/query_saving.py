@@ -18,6 +18,10 @@ async def save_query(query: HistoryQuery):
     try:
         history_query_collection = get_history_query_collection()
         query_dict = query.model_dump()
+        # Check if the query is already in the database
+        existing_query = await history_query_collection.find_one({"query": query_dict['query']})
+        if existing_query:
+            return existing_query
         new_history_query = await history_query_collection.insert_one(query_dict)
         created_query = await history_query_collection.find_one({"_id": new_history_query.inserted_id})
         return created_query

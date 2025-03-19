@@ -41,7 +41,7 @@ dec_agent = DecisionAgent()
 crs_links_agent = CRSLinksAgent()
 translator = googletrans.Translator()
 detected_lang = None
-logging.basicConfig(level=logging.DEBUG, format="%(message)s", handlers=[logging.StreamHandler()])
+logging.basicConfig(level=logging.CRITICAL, format="%(message)s", handlers=[logging.StreamHandler()])
 
 class GraphState(TypedDict):
     sender: Optional[str]
@@ -90,11 +90,12 @@ async def conversation_agent(state, **kwargs):
             }
         elif response[1] == "general":
             prompt = f"""
+            Your name is IRIS
             Greet back the user and tell them that you are here to help them with their questions related to international students in Canada about study permit, PGWP, and visa.
             
             Example: 
             User: Hi!
-            Agent: Hello! I am here to help you with your questions related to international students in Canada about study permit, PGWP, and visa. How can I help you today?
+            Agent: Hello! I am IRIS. I am here to help you with your questions related to international students in Canada about study permit, PGWP, and visa. How can I help you today?
             
             # Strict Rules:
             - Do not talk about any other topics, ONLY talk about international students in Canada about study permit, PGWP, and visa.
@@ -436,7 +437,7 @@ async def run_agent(user_input, iris_id = "1"):
         async for output in agents.astream(inputs, config):
             try:
                 logging.info("\nOutput from the agent: ")
-                logging.debug(output)
+                logging.critical(output)
                 logging.info("\n")
                 if 'conversation_agent' in output.keys():
                     if output['conversation_agent']['receiver'] == '_end_':
