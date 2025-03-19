@@ -30,9 +30,9 @@ class FAQAgent:
                 )
                 new_query = await save_query(new_history_query_data)
                 if new_query.get('error'):
-                    return new_query
+                    return f'Error from FAQAgent with MongoDB: {new_query.get("error")}'
                 else:
                     return "Not found"
         else:
-            raise RuntimeError(json.loads(found_doc.body).get('message'))
+            raise RuntimeError(f'Error from FAQAgent: {json.loads(found_doc.body).get('message')}')
     
