@@ -41,7 +41,7 @@ dec_agent = DecisionAgent()
 crs_links_agent = CRSLinksAgent()
 translator = googletrans.Translator()
 detected_lang = None
-logging.basicConfig(level=logging.DEBUG, format="%(message)s", handlers=[logging.StreamHandler()])
+logging.basicConfig(level=logging.CRITICAL, format="%(message)s", handlers=[logging.StreamHandler()])
 
 class GraphState(TypedDict):
     sender: Optional[str]
@@ -437,7 +437,7 @@ async def run_agent(user_input, iris_id = "1"):
         async for output in agents.astream(inputs, config):
             try:
                 logging.info("\nOutput from the agent: ")
-                logging.debug(output)
+                logging.critical(output)
                 logging.info("\n")
                 if 'conversation_agent' in output.keys():
                     if output['conversation_agent']['receiver'] == '_end_':
