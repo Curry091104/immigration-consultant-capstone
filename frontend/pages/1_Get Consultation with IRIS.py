@@ -105,7 +105,7 @@ def get_consultation_page():
 
     
 def get_iris_id():
-    if 'connection_error' in st.session_state:
+    if 'connection_error' in st.session_state and st.session_state.connection_error is not None:
         st.session_state.connection_error.empty()
         del st.session_state.connection_error
     

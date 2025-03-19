@@ -38,8 +38,11 @@ def get_user_inputs():
                 with text_col:
                     edited_hyperlink_text = st.text_area(f"Hyperlink Text:", key=f"hyperlink_text_q{i}_{j}", label_visibility="collapsed", placeholder="Example")
 
-                combined_hyperlink = f"{edited_hyperlink}: {edited_hyperlink_text}"
-                hyperlinks.append(combined_hyperlink)
+                if edited_hyperlink != "" and edited_hyperlink_text != "":
+                    edited_hyperlink = edited_hyperlink.strip()
+                    edited_hyperlink_text = edited_hyperlink_text.strip()
+                    combined_hyperlink = f"{edited_hyperlink}: {edited_hyperlink_text}"
+                    hyperlinks.append(combined_hyperlink)
                 
         # Add the faq doc to faq_docs
         faq_doc["tags"] = categories.lower().split(", ")
@@ -69,10 +72,12 @@ def on_submit(faq_docs):
             st.error("Please fill in all the required fields")
             return
         
+    if not isinstance(faq_docs, list):
+        faq_docs = [faq_docs]
     session = session_manager.get_session()
     token = session.cookies.get_dict().get("access_token")
     x_api_key = os.getenv("ADMIN_API_KEY")
-    response = session.post("/api/create-faq", json={"faq_docs": faq_docs}, headers={"x-api-key": x_api_key}, cookies={"access_token": token})
+    response = session.post("http://localhost:8000/api/create-faq", json={"faq_docs": faq_docs}, headers={"x-api-key": x_api_key}, cookies={"access_token": token})
     if response.status_code == 201:
         success_msg = st.success("FAQs uploaded successfully")
         time.sleep(2)

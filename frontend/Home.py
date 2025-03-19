@@ -49,7 +49,7 @@ def main_content():
         </div>
         <!-- Chat Now Button -->
         <div class="container">
-            <h1 style="font-family: 'Calistoga', cursive; font-size: 3em; color: white; margin-top: 50px;">Hi there,</h1>
+            <h1 style="font-family: 'Calistoga', cursive; font-size: 3em; color: white; margin-top: 30px;">Hi there,</h1>
             <form action="http://localhost:8501/Get_Consultation_with_IRIS">
                 <button class="chat-now-btn" type="submit">Chat Now</button>
             </form>

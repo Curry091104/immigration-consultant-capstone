@@ -4,7 +4,7 @@ import sys
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 sys.path.append(os.path.join(os.getcwd(), 'immigration-consultant-capstone'))
 
-from fastapi import Form, APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, Request, Body
 from config.mypinecone import MyPinecone
 from auth.admin_api_validation import validate_admin_api_key
 from fastapi.responses import JSONResponse
@@ -14,7 +14,7 @@ from controllers.data_processing import convert_faq_to_langchain_docformat
 router = APIRouter(prefix="/api")
 
 @router.post("/create-faq")
-def create_faq(request: Request, faq_docs: List[dict] = Form(...), index_name: str = Form('faqs'), x_api_key: str = Depends(validate_admin_api_key)):
+def create_faq(request: Request, faq_docs: List[dict] = Body(...), index_name: str = Body('faqs'), x_api_key: str = Depends(validate_admin_api_key)):
     if not x_api_key:
         return JSONResponse({'error': 'Invalid API Key'}, status_code=401)
     token = request.cookies.get('access_token')

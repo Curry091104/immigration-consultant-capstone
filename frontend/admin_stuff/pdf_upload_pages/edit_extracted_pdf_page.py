@@ -126,6 +126,11 @@ def on_save_changes(ofc_doc_id, docs):
         success_message = st.success("Changes saved successfully. Redirecting to the upload page...")
         time.sleep(1.5)
         success_message.empty()
+        st.session_state.__delitem__("docs")
+        st.session_state.pop("ofc_doc_id", None)
+        for key in list(st.session_state.keys()):
+            if key.startswith("doc_") or key.startswith("tags_") or key.startswith("content_") or key.startswith("hyperlink_") or key.startswith("ref_link_"):
+                st.session_state.pop(key, None)
         st.session_state.processing_done = False
         st.session_state.page = UPLOAD_PDF_PAGE
    
@@ -135,6 +140,10 @@ def on_remove_doc(doc):
     st.session_state.docs.remove(doc)
     if len(st.session_state.docs) == 0:
         st.session_state.__delitem__("docs")
+        st.session_state.pop("ofc_doc_id", None)
+        for key in list(st.session_state.keys()):
+            if key.startswith("doc_") or key.startswith("tags_") or key.startswith("content_") or key.startswith("hyperlink_") or key.startswith("ref_link_"):
+                st.session_state.pop(key, None)
         msg = st.warning("No documents left. Redirecting to the upload page...")
         time.sleep(2)
         msg.empty()
@@ -143,6 +152,10 @@ def on_remove_doc(doc):
 
 def go_back():
     st.session_state.__delitem__("docs")
+    st.session_state.pop("ofc_doc_id", None)
+    for key in list(st.session_state.keys()):
+        if key.startswith("doc_") or key.startswith("tags_") or key.startswith("content_") or key.startswith("hyperlink_") or key.startswith("ref_link_"):
+            st.session_state.pop(key, None)
     st.session_state.processing_done = False
     st.session_state.page = UPLOAD_PDF_PAGE
             
