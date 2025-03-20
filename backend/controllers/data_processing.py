@@ -302,7 +302,7 @@ def detect_section_with_content(pdf_path, skip_tags=None, category=None, txt_rem
         else:
             is_section = [(line['chars'][0]['fontname'].find("Lato-Bold") and SECTION_MIN_SIZE <= line['chars'][0]['size'] < SECTION_MAX_SIZE) for page in pdf.pages for line in page.extract_text_lines()]
             is_subsection = [(line['chars'][0]['fontname'].find("Lato-Bold") and SUBSECTION_MIN_SIZE <= line['chars'][0]['size'] < SUBSECTION_MAX_SIZE) for page in pdf.pages for line in page.extract_text_lines()]
-            for page in pdf.pages:
+            for page_num, page in enumerate(pdf.pages):
                 bboxes = [table for table in page.find_tables()]
                 if not bboxes:
                     for i, line in enumerate(page.extract_text_lines()):
