@@ -18,21 +18,38 @@ class FAQAgent:
         found_doc = self.pinecone.search(index_name, query, top_k, filter, include_values, include_metadata)
         if found_doc.status_code == 200:
             output_search = json.loads(found_doc.body)
-            matches = output_search['results']['matches']
-            if matches[0]['score'] > 0.87:
-                return matches[0].get('metadata')
-            else:
-                new_history_query_data = HistoryQuery(
-                    query = query,
-                    category=category,
-                    timestamp = datetime.datetime.now().isoformat(),
-                    clustered=False
-                )
-                new_query = await save_query(new_history_query_data)
-                if new_query.get('error'):
-                    return f'Error from FAQAgent with MongoDB: {new_query.get("error")}'
+            try:
+                matches = output_search['results']['matches']
+                if matches[0]['score'] > 0.87:
+                    return matches[0].get('metadata')
                 else:
-                    return "Not found"
+                    new_history_query_data = HistoryQuery(
+                        query = query,
+                        category=category,
+                        timestamp = datetime.datetime.now().isoformat(),
+                        clustered=False
+                    )
+                    new_query = await save_query(new_history_query_data)
+                    if new_query.get('error'):
+                        return f'Error from FAQAgent with MongoDB: {new_query.get("error")}'
+                    else:
+                        return "Not found"
+            except Exception:
+                return "Not found"
         else:
             raise RuntimeError(f"Error from FAQAgent: {json.loads(found_doc.body).get('message')}")
+        
+        
+        
+##################### TEST #####################
+# faq_agent = FAQAgent()
+# filterout = {"tags": {"$in": ["study permit", "visa"]}}
+# query = "Can I extend my stay as a student?"
+
+# async def test():
+#     answer = await faq_agent.get_answer(query, "study permit", filter=filterout)
+#     print(answer)
+    
+# asyncio.run(test())
+
     
