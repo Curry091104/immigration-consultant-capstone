@@ -218,7 +218,7 @@ def rag_retrieval(state, **kwargs):
     category = state['category']
     filter_pinecone_search = {"tags": {"$in": [category.lower()]}}
     documents = None
-    answer = document_search_agent.get_answers(question, filter=None)
+    answer = document_search_agent.get_answers(question, filter=filter_pinecone_search)
     if answer == "Answer not found":
         return {
             'question': question,
@@ -260,7 +260,7 @@ async def faq_retrieval(state, **kwargs):
     question = state['question']
     category = state['category']
     filter_pinecone_search = {"tags": {"$in": [category.lower()]}}
-    answer = await faq_agent.get_answer(question, category = category, filter=None)
+    answer = await faq_agent.get_answer(question, category = category, filter=filter_pinecone_search)
     if answer == "Not found":
         return {
             'question': question,

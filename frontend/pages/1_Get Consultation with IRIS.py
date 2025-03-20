@@ -140,13 +140,17 @@ async def get_iris_response(input):
         async with session.get(f"http://localhost:8000/iris/{st.session_state.iris_id}?user_input={input}") as response:
             response = await response.json()
             response = response["agent_response"]
+            # Clean up response
+            if '\n\n' in response:
+                response = response.replace('\n\n', '\n')
             if '"' in response:
                 if response[0] == '"':
                     response = response[1:]
                 if response[-1] == '"':
                     response = response[:-1]
-            if '`' in response:
-                response = response.replace('`', '')
+            if '```' in response:
+                response = response.replace('```', '')
+            response = response.strip()
             return response
         
 
