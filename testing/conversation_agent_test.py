@@ -26,7 +26,7 @@ class TestConversationAgent(unittest.TestCase):
         user_input = "How to bake a cake?"
         expected_category = "none"  # Should not be classified as decision_agent
 
-        category, revised_inquiry = self.agent.classify_inquiry_for_decision(user_input)
+        category, _ = self.agent.classify_inquiry_for_decision(user_input)
 
         self.assertEqual(category.lower(), expected_category)
    
@@ -38,7 +38,7 @@ class TestConversationAgent(unittest.TestCase):
         user_input = "In australia, How to apply for student permit if i am from Canada"
         expected_category = "none"
 
-        category, revised_inquiry = self.agent.classify_inquiry_for_decision(user_input)
+        category, _ = self.agent.classify_inquiry_for_decision(user_input)
 
         self.assertEqual(category.lower(), expected_category)
     
@@ -50,7 +50,7 @@ class TestConversationAgent(unittest.TestCase):
         
         expected_category = "none"
 
-        category, revised_inquiry = self.agent.classify_inquiry_for_decision(user_input)
+        category, _ = self.agent.classify_inquiry_for_decision(user_input)
 
         self.assertEqual(category.lower(), expected_category)
         
