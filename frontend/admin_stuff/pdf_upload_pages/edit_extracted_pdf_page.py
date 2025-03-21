@@ -10,6 +10,7 @@ import dotenv
 from Home import session_manager
 from screens import *
 import os
+from functools import partial
 
 dotenv.load_dotenv()
 
@@ -18,9 +19,10 @@ def edit_extracted_pdf_page():
     st.title("Edit Extracted a PDF Document")
       
     if "backend_response" in st.session_state:
-        if "docs" not in st.session_state:
-            st.session_state.docs = st.session_state.backend_response.get("docs")
+        if "docs" not in st.session_state or st.session_state.docs is None:
+            st.session_state.docs = st.session_state.backend_response.get("docs", [])
             
+
         get_user_input()
     else:
         st.write("Error: No data found.")
@@ -42,7 +44,7 @@ def get_user_input():
         with st.expander(f"Document ID: {doc['id'] + 1}"):
             st.button(
                 "🗑️Remove",
-                on_click=lambda doc=doc: on_remove_doc(doc),
+                on_click=partial(on_remove_doc, doc),
                 key=f"remove_doc_{doc['id']}"
             )
             doc_key = "doc_" + str(doc['id'])
@@ -124,14 +126,36 @@ def on_save_changes(ofc_doc_id, docs):
         success_message = st.success("Changes saved successfully. Redirecting to the upload page...")
         time.sleep(1.5)
         success_message.empty()
+        st.session_state.__delitem__("docs")
+        st.session_state.pop("ofc_doc_id", None)
+        for key in list(st.session_state.keys()):
+            if key.startswith("doc_") or key.startswith("tags_") or key.startswith("content_") or key.startswith("hyperlink_") or key.startswith("ref_link_"):
+                st.session_state.pop(key, None)
         st.session_state.processing_done = False
         st.session_state.page = UPLOAD_PDF_PAGE
    
 def on_remove_doc(doc):
+    if doc not in st.session_state.docs:
+        return
     st.session_state.docs.remove(doc)
+    if len(st.session_state.docs) == 0:
+        st.session_state.__delitem__("docs")
+        st.session_state.pop("ofc_doc_id", None)
+        for key in list(st.session_state.keys()):
+            if key.startswith("doc_") or key.startswith("tags_") or key.startswith("content_") or key.startswith("hyperlink_") or key.startswith("ref_link_"):
+                st.session_state.pop(key, None)
+        msg = st.warning("No documents left. Redirecting to the upload page...")
+        time.sleep(2)
+        msg.empty()
+        st.session_state.processing_done = False
+        st.session_state.page = UPLOAD_PDF_PAGE
 
 def go_back():
-    st.session_state.processing_done = False
     st.session_state.__delitem__("docs")
+    st.session_state.pop("ofc_doc_id", None)
+    for key in list(st.session_state.keys()):
+        if key.startswith("doc_") or key.startswith("tags_") or key.startswith("content_") or key.startswith("hyperlink_") or key.startswith("ref_link_"):
+            st.session_state.pop(key, None)
+    st.session_state.processing_done = False
     st.session_state.page = UPLOAD_PDF_PAGE
             

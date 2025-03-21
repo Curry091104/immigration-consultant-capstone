@@ -108,6 +108,7 @@ def on_submit(option, update_pdf_id, category, skip_tags, inline_txt_removed, up
         category_send = category.split(',')
         category_send = [x.lower().strip() for x in category_send]
         skip_tags_send = skip_tags.split(',')
+        skip_tags_send = [x.strip() for x in skip_tags_send]
         inline_txt_removed_send = inline_txt_removed.split(',')
         headers = {"x-api-key": x_api_key}
         file = {"pdf_file": uploaded_file}

@@ -103,12 +103,8 @@ class ConversationAgent:
                 Revised Inquiry: None
                 Reason for Revision: None
                 
-                Question: "What is the color of the sky?"
-                Answer: 
+                Other unrelated questions: "What is the color of the sky?", "What is the capital of Canada?", "What is the population of Toronto?"
                 Category: None
-                Reason: The inquiry is not related to international students or Canadian Immigration.
-                Revised Inquiry: None
-                Reason for Revision: None
         ❌ Ignore and classify as 'None' any inquiry related to general immigration, Express Entry, CRS score, work permits (except PGWP), or any topic unrelated to international students.
         ❌ Ignore and classify as 'None' any inquiry about general knowledge, technology, politics, business, or any topic outside IRCC international student matters.
         2️⃣ ✅ Any meaningful inquiry mentioning "IRCC" must ALWAYS be classified as 'decision_agent' if it relates to international students.
@@ -117,6 +113,12 @@ class ConversationAgent:
         5️⃣ ❌ If the inquiry is clearly NOT related to international students, classify it as 'None' and do not respond.
         6️⃣ ❓ If the question is related to IRCC but is unclear or lacks important details, which means it is too broad based on your thoughts, classify it as 'general' and ask the user for clarification, do not answer directly.
         7️⃣ ❓ About greeting messages, for example, "Hello", "How are you?", you should answer like "I'm here to help you with your questions about international students and immigration."
+        8️⃣ ✅ If the inquiry grammatically incorrect, revise it to be grammatically correct.
+        9️⃣ ✅ Revise the inquiry means to add missing keywords to the inquiry to make it clear and understandable, and keep the meaning of the inquiry the same.
+        10 ❌ DO NOT add any additional content to the revised inquiry section that changes the meaning of the inquiry.
+            Example:
+            User Inquiry: "when should I apply for work permit?"
+            Revised Inquiry: "When should I apply for a post-graduation work permit?"
 
 
 

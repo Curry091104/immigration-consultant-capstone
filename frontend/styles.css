@@ -1,16 +1,15 @@
 @import url('https://fonts.googleapis.com/css2?family=Calistoga&display=swap');
 .container {
     width: 100%;
-    height: 47.3vh;
     margin: 0;
     text-align: center;
 }
 .chat-now-btn {
     position: relative;
-    margin: 50px;
+    margin: 30px;
     width: 400px;
     height: 100px;
-    background-image: linear-gradient(rgba(116, 245, 241, 0.2),#ff030300);
+    background-image: linear-gradient(rgba(116, 245, 241, 0.2),#fa727252);
     border-radius: 60px;
     color: black;
     cursor: pointer;
@@ -20,7 +19,6 @@
     overflow: hidden;
 }
 .chat-now-btn:hover {
-    color: #ff0501b7;
-    background-image: linear-gradient(rgba(107, 168, 255, 0.2),#89000000);
+    background-image: linear-gradient(#d84a4a40, rgba(157, 247, 252, 0.347));
 }
 

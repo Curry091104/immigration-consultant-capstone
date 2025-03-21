@@ -23,7 +23,9 @@ async def chat_endpoint(iris_id: str = None, user_input: str = ""):
     if iris_id is None or iris_id != original_iris_id or iris_id == "":
         return JSONResponse(status_code=status.HTTP_400_BAD_REQUEST, content={"error": "Invalid iris_id"})
     user_input = user_input.strip()
-    agent_response = await run_agent(user_input, iris_id)
+    agent_response = ""
+    async for response in run_agent(user_input, iris_id):
+        agent_response = response
     return JSONResponse(status_code=status.HTTP_200_OK, content={"agent_response": agent_response})
     
     

@@ -28,9 +28,9 @@ def integration_step1(tokens):
       if index+1 == len(tokens):
         combined_token = tokens[index-1] + token
         if combined_token.lower() in dict_list:
-          new_tokens.pop()
+          if len(new_tokens) > 0:
+            new_tokens.pop()
           new_tokens.append(combined_token)
-          #print("3 " +combined_token)
         else:
           new_tokens.append(token)
         return new_tokens

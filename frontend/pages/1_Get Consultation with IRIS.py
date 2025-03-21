@@ -3,6 +3,7 @@ import requests
 import json
 import asyncio
 import aiohttp
+import time
 
 
 
@@ -15,6 +16,15 @@ st.logo(
     "static/iris-side.png",
     size="large"
 )
+
+st.sidebar.title("IRIS Disclaimer")
+st.sidebar.write("""
+    <p style="font-size: 1.2rem;">
+        Please be aware that IRIS chatbot is an automated system, and it may not always
+        provide 100% accurate information. While we strive to provide accurate information,
+        we cannot guarantee the accuracy, completeness, or timeliness of the information provided by IRIS chatbot.
+    </p>
+""", unsafe_allow_html=True)
 
 st.markdown(
     """
@@ -42,10 +52,19 @@ def get_consultation_page():
         with st.chat_message(message["role"], avatar=message["avatar"]):
             st.markdown(message["text"])
         
-    if not any(message["text"] == "Hello! I am IRIS, your virtual assistant. I am here to help you with your queries. Please type your query below." for message in st.session_state.messages):
+    if not any(message["text"] == "Hello! I am IRIS, your virtual assistant. I am here to help you with your queries. Before starting, I suggest you to read the IRIS Disclaimer in the left sidebar to understand the terms, conditions, and limitations associated with its use." for message in st.session_state.messages):
+        
+        time.sleep(1.5)
+        
+        waiting_message = st.empty()
+        waiting_message.markdown("IRIS is typing...")
+        
+        time.sleep(2)
+        
+        waiting_message.empty()
         with st.chat_message("assistant", avatar="🤖"):
-            st.markdown("Hello! I am IRIS, your virtual assistant. I am here to help you with your queries. Please type your query below.")
-        st.session_state.messages.append({"role": "assistant", "text": "Hello! I am IRIS, your virtual assistant. I am here to help you with your queries. Please type your query below.", "avatar": "🤖"})
+            st.markdown("Hello! I am IRIS, your virtual assistant. I am here to help you with your queries. Before starting, I suggest you to read the IRIS Disclaimer in the left sidebar to understand the terms, conditions, and limitations associated with its use.")
+        st.session_state.messages.append({"role": "assistant", "text": "Hello! I am IRIS, your virtual assistant. I am here to help you with your queries. Before starting, I suggest you to read the IRIS Disclaimer in the left sidebar to understand the terms, conditions, and limitations associated with its use.", "avatar": "🤖"})
     
     if prompt := st.chat_input("Type your message here...", disabled=st.session_state.disabled_chat):
         try:
@@ -86,6 +105,10 @@ def get_consultation_page():
 
     
 def get_iris_id():
+    if 'connection_error' in st.session_state and st.session_state.connection_error is not None:
+        st.session_state.connection_error.empty()
+        del st.session_state.connection_error
+    
     if 'messages' not in st.session_state:
         st.session_state.messages = []
         
@@ -94,8 +117,17 @@ def get_iris_id():
     
     if 'disabled_chat' not in st.session_state:
         st.session_state.disabled_chat = False
+    
+    if 'connection_error' not in st.session_state:
+        st.session_state.connection_error = None
         
-    response = requests.get("http://localhost:8000/api/iris-id")
+    try:
+        response = requests.get("http://localhost:8000/api/iris-id")
+    except requests.exceptions.ConnectionError:
+        st.session_state.connection_error = st.error("Trying to connect to server...")
+        time.sleep(10)
+        get_iris_id()
+        return
     if 'iris_id' not in st.session_state:
         st.session_state.iris_id = response.json()["iris_id"]
         
@@ -108,13 +140,17 @@ async def get_iris_response(input):
         async with session.get(f"http://localhost:8000/iris/{st.session_state.iris_id}?user_input={input}") as response:
             response = await response.json()
             response = response["agent_response"]
+            # Clean up response
+            if '\n\n' in response:
+                response = response.replace('\n\n', '\n')
             if '"' in response:
                 if response[0] == '"':
                     response = response[1:]
                 if response[-1] == '"':
                     response = response[:-1]
-            if '`' in response:
-                response = response.replace('`', '')
+            if '```' in response:
+                response = response.replace('```', '')
+            response = response.strip()
             return response
         
 

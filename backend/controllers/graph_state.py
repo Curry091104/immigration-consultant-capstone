@@ -41,7 +41,7 @@ dec_agent = DecisionAgent()
 crs_links_agent = CRSLinksAgent()
 translator = googletrans.Translator()
 detected_lang = None
-logging.basicConfig(level=logging.DEBUG, format="%(message)s", handlers=[logging.StreamHandler()])
+logging.basicConfig(level=logging.CRITICAL, format="%(message)s", handlers=[logging.StreamHandler()])
 
 class GraphState(TypedDict):
     sender: Optional[str]
@@ -90,11 +90,12 @@ async def conversation_agent(state, **kwargs):
             }
         elif response[1] == "general":
             prompt = f"""
+            Your name is IRIS
             Greet back the user and tell them that you are here to help them with their questions related to international students in Canada about study permit, PGWP, and visa.
             
             Example: 
             User: Hi!
-            Agent: Hello! I am here to help you with your questions related to international students in Canada about study permit, PGWP, and visa. How can I help you today?
+            Agent: Hello! I am IRIS. I am here to help you with your questions related to international students in Canada about study permit, PGWP, and visa. How can I help you today?
             
             # Strict Rules:
             - Do not talk about any other topics, ONLY talk about international students in Canada about study permit, PGWP, and visa.
@@ -217,7 +218,7 @@ def rag_retrieval(state, **kwargs):
     category = state['category']
     filter_pinecone_search = {"tags": {"$in": [category.lower()]}}
     documents = None
-    answer = document_search_agent.get_answers(question, filter=None)
+    answer = document_search_agent.get_answers(question, filter=filter_pinecone_search)
     if answer == "Answer not found":
         return {
             'question': question,
@@ -259,7 +260,7 @@ async def faq_retrieval(state, **kwargs):
     question = state['question']
     category = state['category']
     filter_pinecone_search = {"tags": {"$in": [category.lower()]}}
-    answer = await faq_agent.get_answer(question, category = category, filter=None)
+    answer = await faq_agent.get_answer(question, category = category, filter=filter_pinecone_search)
     if answer == "Not found":
         return {
             'question': question,
@@ -436,25 +437,28 @@ async def run_agent(user_input, iris_id = "1"):
         async for output in agents.astream(inputs, config):
             try:
                 logging.info("\nOutput from the agent: ")
-                logging.debug(output)
+                logging.critical(output)
                 logging.info("\n")
                 if 'conversation_agent' in output.keys():
-                    if 'generation' in output['conversation_agent'].keys():
-                            generation = output['conversation_agent']['generation']
-                            if "<|im_start|>assistant" in generation:
-                                generation = generation.split("<|im_start|>assistant")[1]
-                            if detected_lang == "fr":
-                                output = await translator.translate(generation, src='en', dest='fr')
-                                return output.text
-                            else:
-                                return generation
+                    if output['conversation_agent']['receiver'] == '_end_':
+                        if 'generation' in output['conversation_agent'].keys():
+                                generation = output['conversation_agent']['generation']
+                                if "<|im_start|>assistant" in generation:
+                                    generation = generation.split("<|im_start|>assistant")[1]
+                                if detected_lang == "fr":
+                                    output = await translator.translate(generation, src='en', dest='fr')
+                                    yield output.text
+                                else:
+                                    yield generation
+                    else:
+                        continue
                 elif 'cross_check_agent' in output.keys():
                     if output['cross_check_agent']['receiver'] != 'conversation_agent':
                         if detected_lang == "fr":
                             output = await translator.translate(output['cross_check_agent']['generation'], src='en', dest='fr')
-                            return output.text
+                            yield output.text
                         else:
-                            return output['cross_check_agent']['generation']
+                            yield output['cross_check_agent']['generation']
                     else:
                         continue
                 else:
@@ -462,12 +466,13 @@ async def run_agent(user_input, iris_id = "1"):
             except GeneratorExit:
                 logging.warning("GeneratorExit ignored")
                 break
+
     except GeneratorExit:
         logging.warning("GeneratorExit ignored. Continuing execution.")
-        return None
+        yield "An error occurred: GeneratorExit. Please try again."
     except Exception as e:
         print(e)
-        return "An error occurred. Please try again."
+        yield "An error occurred. Please try again."
         
 
 # async def main():

@@ -7,6 +7,7 @@ from screens import *
 from Home import session_manager
 import time
 import os
+from functools import partial
 from dotenv import load_dotenv
 load_dotenv()
 
@@ -21,32 +22,51 @@ def get_user_inputs():
     for i in range(st.session_state.num_questions):
         faq_doc = {}
         with st.expander(f"Question {i + 1}", expanded=True):
-            categories = st.text_input("Categories *", key=f"category_{i}")
-            faq_id = st.text_input("ID *", key=f"faq_id_{i}")
-            question = st.text_input("Question *", key=f"question_{i}")
-            answer = st.text_area("Answer *", key=f"answer_{i}")
+            faq_doc_key = f"faq_{i}"
+            
+            if faq_doc_key not in st.session_state:
+                st.session_state[faq_doc_key] = {
+                    "categories": "",
+                    "faq_id": "",
+                    "question": "",
+                    "answer": "",
+                    "hyperlinks": []
+                }
+            
+            
+            st.session_state[faq_doc_key]["categories"] = st.text_input("Categories *:", st.session_state[faq_doc_key]["categories"], key=f"categories_{i}")
+            st.session_state[faq_doc_key]["faq_id"] = st.text_input("Faq ID *:", st.session_state[faq_doc_key]["faq_id"], key=f"faq_id_{i}")
+            st.session_state[faq_doc_key]["question"] = st.text_area("Question *:", st.session_state[faq_doc_key]["question"], key=f"question_{i}")
+            st.session_state[faq_doc_key]["answer"] = st.text_area("Answer *:", st.session_state[faq_doc_key]["answer"], key=f"answer_{i}")
+                
+            if 'num_hyperlinks' not in st.session_state[faq_doc_key]:
+                st.session_state[faq_doc_key]["num_hyperlinks"] = 1
+            
             st.write("Hyperlink:")
-            hyperlinks = []
             c1, c2 = st.columns([1, 25])
-            c1.button("Add", on_click=handle_add_hyperlink_click, key=f"add_hyperlink_{i}")
-            if st.session_state.num_hyperlinks > 1:
-                c2.button("Remove", on_click=handle_remove_hyperlink_click, key=f"remove_hyperlink_{i}")
+            c1.button("Add", on_click=partial(handle_add_hyperlink_click, faq_doc_key), key=f"add_hyperlink_{i}")
+            if st.session_state[faq_doc_key]["num_hyperlinks"] > 1:
+                c2.button("Remove", on_click=partial(handle_remove_hyperlink_click, faq_doc_key), key=f"remove_hyperlink_{i}")
             hyperlink_col, text_col = st.columns(2)
-            for j in range(st.session_state.num_hyperlinks):
+            for j in range(st.session_state[faq_doc_key]["num_hyperlinks"]):
                 with hyperlink_col:
                     edited_hyperlink = st.text_area(f"Hyperlink:", key=f"hyperlink_q{i}_{j}", label_visibility="collapsed", placeholder="https://www.example.com")
                 with text_col:
                     edited_hyperlink_text = st.text_area(f"Hyperlink Text:", key=f"hyperlink_text_q{i}_{j}", label_visibility="collapsed", placeholder="Example")
 
-                combined_hyperlink = f"{edited_hyperlink}: {edited_hyperlink_text}"
-                hyperlinks.append(combined_hyperlink)
+                if edited_hyperlink != "" and edited_hyperlink_text != "":
+                    edited_hyperlink = edited_hyperlink.strip()
+                    edited_hyperlink_text = edited_hyperlink_text.strip()
+                    combined_hyperlink = f"{edited_hyperlink}: {edited_hyperlink_text}"
+                    st.session_state[faq_doc_key]["hyperlinks"].append(combined_hyperlink)
                 
         # Add the faq doc to faq_docs
-        faq_doc["tags"] = categories.lower().split(", ")
-        faq_doc["faq_id"] = faq_id
-        faq_doc["question"] = question
-        faq_doc["answer"] = answer
-        faq_doc["hyperlinks"] = hyperlinks
+        faq_doc["tags"] = st.session_state[faq_doc_key]["categories"].lower().split(", ")
+        faq_doc["tags"] = [tag.strip() for tag in faq_doc["tags"]]
+        faq_doc["faq_id"] = st.session_state[faq_doc_key]["faq_id"]
+        faq_doc["question"] = st.session_state[faq_doc_key]["question"]
+        faq_doc["answer"] = st.session_state[faq_doc_key]["answer"]
+        faq_doc["hyperlinks"] = st.session_state[faq_doc_key]["hyperlinks"]
         faq_docs.append(faq_doc)
         
         
@@ -59,8 +79,6 @@ def get_user_inputs():
 def initialize_session_state():
     if 'num_questions' not in st.session_state:
         st.session_state.num_questions = 1
-    if 'num_hyperlinks' not in st.session_state:
-        st.session_state.num_hyperlinks = 1
     
     
 def on_submit(faq_docs):
@@ -69,16 +87,20 @@ def on_submit(faq_docs):
             st.error("Please fill in all the required fields")
             return
         
+    if not isinstance(faq_docs, list):
+        faq_docs = [faq_docs]
     session = session_manager.get_session()
     token = session.cookies.get_dict().get("access_token")
     x_api_key = os.getenv("ADMIN_API_KEY")
-    response = session.post("/api/create-faq", json={"faq_docs": faq_docs}, headers={"x-api-key": x_api_key}, cookies={"access_token": token})
+    response = session.post("http://localhost:8000/api/create-faq", json={"faq_docs": faq_docs}, headers={"x-api-key": x_api_key}, cookies={"access_token": token})
     if response.status_code == 201:
         success_msg = st.success("FAQs uploaded successfully")
         time.sleep(2)
         success_msg.empty()
         st.session_state.num_questions = 1
-        st.session_state.num_hyperlinks = 1
+        for i in st.session_state.keys():
+            if i.startswith("faq_"):
+                st.session_state.pop(i)
         st.session_state.page = ADMIN_DASHBOARD
         
     else:
@@ -90,15 +112,18 @@ def handle_add_question_click():
 def handle_remove_question_click():
     if st.session_state.num_questions > 1:
         st.session_state.num_questions -= 1
-        
-def handle_add_hyperlink_click():
-    st.session_state.num_hyperlinks += 1
+                
+def handle_add_hyperlink_click(faq_index):
+    st.session_state[faq_index]["num_hyperlinks"] += 1
     
-def handle_remove_hyperlink_click():
-    if st.session_state.num_hyperlinks > 1:
-        st.session_state.num_hyperlinks -= 1
+def handle_remove_hyperlink_click(faq_index):
+    if st.session_state[faq_index]["num_hyperlinks"] > 1:
+        st.session_state[faq_index]["num_hyperlinks"] -= 1
     
 def go_back():
     st.session_state.num_questions = 1
-    st.session_state.num_hyperlinks = 1
+    for i in st.session_state.keys():
+        if i.startswith("faq_"):
+            st.session_state.pop(i)
+            
     st.session_state.page = ADMIN_DASHBOARD
