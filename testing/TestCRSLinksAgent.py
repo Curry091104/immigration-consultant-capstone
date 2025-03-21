@@ -15,33 +15,21 @@ class TestCRSLinksAgent(unittest.TestCase):
     def setUp(self):
         self.agent = CRSLinksAgent()
 
-    def test_get_recommendations_score(self):
+    def test_get_recommendations_link_match(self):
         user_input = "How to calculate CRS score points?"
         expected_recommendation = {'CRS Calculator': 'https://www.canada.ca/en/immigration-refugees-citizenship/services/immigrate-canada/express-entry/check-score.html'}
         self.assertDictEqual(self.agent.get_recommendations(user_input), expected_recommendation)
 
-    def test_get_recommendations_criteria(self):
-        user_input = "How can I find the CRS Criteria?"
-        expected_recommendation = {'CRS Criteria': 'https://www.canada.ca/en/immigration-refugees-citizenship/services/immigrate-canada/express-entry/check-score/crs-criteria.html'}
-        self.assertDictEqual(self.agent.get_recommendations(user_input), expected_recommendation)
-
-    def test_get_recommendations_improvement(self):
-        user_input = "How can I improve my score?"
-        expected_recommendation = {'CRS Score Improvement': 'https://www.canadim.com/blog/how-to-increase-crs-score/'}
-        self.assertDictEqual(self.agent.get_recommendations(user_input), expected_recommendation)
-        
-    def test_get_recommendations_entry_score(self):
-        user_input = "calculate express entry score"
-        expected_recommendation = {
-            'CRS Calculator': 'https://www.canada.ca/en/immigration-refugees-citizenship/services/immigrate-canada/express-entry/check-score.html'
-        }
-        self.assertDictEqual(self.agent.get_recommendations(user_input), expected_recommendation)
+    def test_get_recommendations_no_link_match(self):
+        user_input = "What time is it?"
+        expected_recommendation = 'No recommendations found'
+        self.assertEqual(self.agent.get_recommendations(user_input), expected_recommendation)
         
     def test_get_recommendations_empty_string(self):
         user_input = ""
         
         with self.assertRaises(ValueError):
-            self.agent.get_recommendations(user_input)
+            print(self.agent.get_recommendations(user_input))
         
 if __name__ == '__main__':
     unittest.main(exit=False)

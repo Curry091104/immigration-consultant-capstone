@@ -35,7 +35,7 @@ class TestDecisionAgent(unittest.TestCase):
     def test_classify_question_empty_string(self):
         question = ""
         with self.assertRaises(ValueError):
-            self.agent.classify_question(question)
+            print(self.agent.classify_question(question))
 
 
 if __name__ == '__main__':
