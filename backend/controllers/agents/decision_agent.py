@@ -2,8 +2,11 @@ import os
 import csv
 
 class DecisionAgent:
-    def __init__(self):
-        self.path = os.path.dirname(os.path.abspath("__file__"))
+    def __init__(self, datapath=None):
+        if datapath==None:
+            self.path = os.path.dirname(os.path.abspath("__file__"))
+        else:
+            self.path = datapath
         self.dataset_l1_files = ['Visa_l1.csv', 'SP_l1.csv', 'PGWP_l1.csv', 'CRS_l1.csv']
         self.dataset_l2_files = ['Visa_l2.csv', 'SP_l2.csv', 'PGWP_l2.csv', 'CRS_l2.csv']
         self.classes = {0:"visa", 1:"study permit", 2:"pgwp", 3:"crs"}
