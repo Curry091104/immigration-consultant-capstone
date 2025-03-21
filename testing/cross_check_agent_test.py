@@ -60,6 +60,14 @@ class TestCrossCheckAgentTrueModel(unittest.TestCase):
         self.assertIsInstance(score, float)
         self.assertGreaterEqual(score, 0.0)
         self.assertLessEqual(score, 1.0)
+        
+        
+    def test_one_sentence_is_none(self):
+        llm_answer = "The capital of France is Paris."
+        ref_answer = None
+        
+        with self.assertRaises(TypeError):
+            self.agent.cross_check(llm_answer, ref_answer)
 
 if __name__ == '__main__':
     unittest.main()
