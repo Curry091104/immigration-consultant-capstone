@@ -20,22 +20,28 @@ class TestCRSLinksAgent(unittest.TestCase):
         expected_recommendation = {'CRS Calculator': 'https://www.canada.ca/en/immigration-refugees-citizenship/services/immigrate-canada/express-entry/check-score.html'}
         self.assertDictEqual(self.agent.get_recommendations(user_input), expected_recommendation)
 
-    def test_get_recommendations_profile(self):
-        user_input = "How can I calculate my CRS score based on my specific qualifications and situation?"
+    def test_get_recommendations_criteria(self):
+        user_input = "How can I find the CRS Criteria?"
         expected_recommendation = {'CRS Criteria': 'https://www.canada.ca/en/immigration-refugees-citizenship/services/immigrate-canada/express-entry/check-score/crs-criteria.html'}
         self.assertDictEqual(self.agent.get_recommendations(user_input), expected_recommendation)
 
-    def test_get_recommendations_invitation(self):
+    def test_get_recommendations_improvement(self):
         user_input = "How can I improve my score?"
         expected_recommendation = {'CRS Score Improvement': 'https://www.canadim.com/blog/how-to-increase-crs-score/'}
         self.assertDictEqual(self.agent.get_recommendations(user_input), expected_recommendation)
         
-    def test_get_recommendations_multiple_matches(self):
+    def test_get_recommendations_entry_score(self):
         user_input = "calculate express entry score"
         expected_recommendation = {
             'CRS Calculator': 'https://www.canada.ca/en/immigration-refugees-citizenship/services/immigrate-canada/express-entry/check-score.html'
         }
         self.assertDictEqual(self.agent.get_recommendations(user_input), expected_recommendation)
+        
+    def test_get_recommendations_empty_string(self):
+        user_input = ""
+        
+        with self.assertRaises(ValueError):
+            self.agent.get_recommendations(user_input)
         
 if __name__ == '__main__':
     unittest.main(exit=False)

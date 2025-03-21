@@ -31,6 +31,11 @@ class TestDecisionAgent(unittest.TestCase):
     def test_classify_question_crs(self):
         question = "How many points do I need for express entry invitation?"
         self.assertEqual(self.agent.classify_question(question), "crs")
+        
+    def test_classify_question_empty_string(self):
+        question = ""
+        with self.assertRaises(ValueError):
+            self.agent.classify_question(question)
 
 
 if __name__ == '__main__':
