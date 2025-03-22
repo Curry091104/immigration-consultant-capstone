@@ -445,6 +445,8 @@ async def run_agent(user_input, iris_id = "1"):
                                 generation = output['conversation_agent']['generation']
                                 if "<|im_start|>assistant" in generation:
                                     generation = generation.split("<|im_start|>assistant")[1]
+                                if "<|im_end|>" in generation:
+                                    generation = generation.split("<|im_end|>")[0]
                                 if detected_lang == "fr":
                                     output = await translator.translate(generation, src='en', dest='fr')
                                     yield output.text

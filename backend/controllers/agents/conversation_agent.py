@@ -17,7 +17,7 @@ class ConversationAgent:
     local_tokenizer = None
     local_model = None
     
-    def __init__(self, max_tokens=1028, temperature=0.5):
+    def __init__(self, max_tokens=512, temperature=0.5):
         # Initialize the LLM Model
         # print("Loading local model...")
         # print(self.__class__.local_model, self.__class__.local_tokenizer)
@@ -68,7 +68,7 @@ class ConversationAgent:
                 tokenizer=self.__class__.local_tokenizer,
                 device_map="auto"
             )
-            self.llm = HuggingFacePipeline(pipeline=self.llm_model, pipeline_kwargs={"temperature": self.temperature, "max_new_tokens": 8000})
+            self.llm = HuggingFacePipeline(pipeline=self.llm_model, pipeline_kwargs={"max_new_tokens": self.max_tokens, "temperature": self.temperature})
             self.chat = ChatHuggingFace(llm=self.llm, verbose=True)
 
     def classify_inquiry_for_decision(self, user_input):
