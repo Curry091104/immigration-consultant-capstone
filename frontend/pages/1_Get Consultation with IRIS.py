@@ -4,6 +4,7 @@ import json
 import asyncio
 import aiohttp
 import time
+import re
 
 
 
@@ -19,10 +20,19 @@ st.logo(
 
 st.sidebar.title("IRIS Disclaimer")
 st.sidebar.write("""
-    <p style="font-size: 1.2rem;">
+    <p style="font-size: 0.8rem;">
         Please be aware that IRIS chatbot is an automated system, and it may not always
         provide 100% accurate information. While we strive to provide accurate information,
         we cannot guarantee the accuracy, completeness, or timeliness of the information provided by IRIS chatbot.
+    </p>
+""", unsafe_allow_html=True)
+
+st.sidebar.title("Avis de non-responsabilité d'IRIS")
+st.sidebar.write("""
+    <p style="font-size: 0.8rem;">
+        Veuillez noter que le chatbot IRIS est un système automatisé et qu'il peut ne pas toujours fournir des informations exactes à 100 %. 
+        Bien que nous nous efforcions de fournir des informations exactes, 
+        nous ne pouvons garantir leur exactitude, leur exhaustivité ni leur actualité.
     </p>
 """, unsafe_allow_html=True)
 
@@ -52,7 +62,7 @@ def get_consultation_page():
         with st.chat_message(message["role"], avatar=message["avatar"]):
             st.markdown(message["text"])
         
-    if not any(message["text"] == "Hello! I am IRIS, your virtual assistant. I am here to help you with your queries. Before starting, I suggest you to read the IRIS Disclaimer in the left sidebar to understand the terms, conditions, and limitations associated with its use." for message in st.session_state.messages):
+    if not any(message["text"] == "Hello! I am IRIS, your virtual assistant. I am here to help you with your queries. Before starting, I suggest you read the IRIS Disclaimer in the left sidebar to understand the terms, conditions, and limitations associated with its use.\n\nBonjour ! Je suis IRIS, votre assistante virtuelle. Je suis là pour répondre à vos questions. Avant de commencer, je vous suggère de lire l'avis de non-responsabilité d'IRIS dans la barre latérale gauche pour comprendre les conditions d'utilisation et les limitations liées à son utilisation." for message in st.session_state.messages):
         
         time.sleep(1.5)
         
@@ -63,8 +73,8 @@ def get_consultation_page():
         
         waiting_message.empty()
         with st.chat_message("assistant", avatar="🤖"):
-            st.markdown("Hello! I am IRIS, your virtual assistant. I am here to help you with your queries. Before starting, I suggest you to read the IRIS Disclaimer in the left sidebar to understand the terms, conditions, and limitations associated with its use.")
-        st.session_state.messages.append({"role": "assistant", "text": "Hello! I am IRIS, your virtual assistant. I am here to help you with your queries. Before starting, I suggest you to read the IRIS Disclaimer in the left sidebar to understand the terms, conditions, and limitations associated with its use.", "avatar": "🤖"})
+            st.markdown("Hello! I am IRIS, your virtual assistant. I am here to help you with your queries. Before starting, I suggest you read the IRIS Disclaimer in the left sidebar to understand the terms, conditions, and limitations associated with its use.\n\nBonjour ! Je suis IRIS, votre assistante virtuelle. Je suis là pour répondre à vos questions. Avant de commencer, je vous suggère de lire l'avis de non-responsabilité d'IRIS dans la barre latérale gauche pour comprendre les conditions d'utilisation et les limitations liées à son utilisation.")
+        st.session_state.messages.append({"role": "assistant", "text": "Hello! I am IRIS, your virtual assistant. I am here to help you with your queries. Before starting, I suggest you read the IRIS Disclaimer in the left sidebar to understand the terms, conditions, and limitations associated with its use.\n\nBonjour ! Je suis IRIS, votre assistante virtuelle. Je suis là pour répondre à vos questions. Avant de commencer, je vous suggère de lire l'avis de non-responsabilité d'IRIS dans la barre latérale gauche pour comprendre les conditions d'utilisation et les limitations liées à son utilisation.", "avatar": "🤖"})
     
     if prompt := st.chat_input("Type your message here...", disabled=st.session_state.disabled_chat):
         try:
@@ -124,8 +134,8 @@ def get_iris_id():
     try:
         response = requests.get("http://localhost:8000/api/iris-id")
     except requests.exceptions.ConnectionError:
-        st.session_state.connection_error = st.error("Trying to connect to server...")
-        time.sleep(10)
+        st.session_state.connection_error = st.error("Trying to connect to server.\n\nTentative de connexion au serveur.")
+        time.sleep(15)
         get_iris_id()
         return
     if 'iris_id' not in st.session_state:
@@ -141,15 +151,14 @@ async def get_iris_response(input):
             response = await response.json()
             response = response["agent_response"]
             # Clean up response
-            if '\n\n' in response:
-                response = response.replace('\n\n', '\n')
-            if '"' in response:
-                if response[0] == '"':
-                    response = response[1:]
-                if response[-1] == '"':
-                    response = response[:-1]
-            if '```' in response:
-                response = response.replace('```', '')
+            response = re.sub(r'(?<!\n)\n(?!\n)', '\n\n', response)
+            response = re.sub(r'(?<!\\n)\\n(?!\\n)', '\\n\\n', response)
+
+            # Remove surrounding quotes if present
+            response = response.strip('"')
+
+            # Remove triple backticks (```), often used in code blocks
+            response = response.replace("```", "")
             response = response.strip()
             return response
         

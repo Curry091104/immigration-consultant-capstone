@@ -14,10 +14,25 @@
     color: black;
     cursor: pointer;
     font-family: 'Calistoga', cursive;
-    font-size: 2em;
     font-weight: bold;
     overflow: hidden;
 }
+
+.chat-now-btn p {
+    margin: 0;
+    text-align: center;
+}
+
+.chat-now-btn p:first-child {
+    font-size: 32px;
+    font-weight: bold;
+}
+
+.chat-now-btn p:last-child {
+    font-size: 14px;
+    margin-top: 5px;
+}
+
 .chat-now-btn:hover {
     background-image: linear-gradient(#d84a4a40, rgba(157, 247, 252, 0.347));
 }

@@ -128,7 +128,7 @@ async def conversation_agent(state, **kwargs):
         if 'time_cross_check' not in state.keys():
             state['time_cross_check'] = 0
         if cross_check_needed:
-            generation = conv_agent.handle_document_search_request(document_response=documents)
+            generation = conv_agent.handle_document_search_request(document_response=documents, question=question)
             if generation == "Sorry, I am unable to answer this question right now, please ask another question.":
                 return {
                     'question': question, 
@@ -148,7 +148,7 @@ async def conversation_agent(state, **kwargs):
             }
         else:
             request_user = state['request_user']
-            generation = conv_agent.handle_document_search_request(request_user)
+            generation = conv_agent.handle_document_search_request(request_user, question = question)
             return {
                 'question': question, 
                 'generation': generation,

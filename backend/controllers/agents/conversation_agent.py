@@ -420,7 +420,7 @@ class ConversationAgent:
                     raise ValueError("Reformatted response could not be extracted at crs_agent.")
         return reformated_response
     
-    def handle_document_search_request(self, document_response):
+    def handle_document_search_request(self, document_response, question):
         """
         Handles the document search response
         
@@ -429,7 +429,8 @@ class ConversationAgent:
         2. If the document is not found, ask the user to clarify the question
         """
         handle_document_search_prompt = f"""
-        You are an intelligent and helpful summary agent that reformats the response from the document_search_agent into a human-like conversation that is easy to understand by college students.
+        You are an intelligent and helpful summary agent that reformats the response from the document_search_agent based on the student's query
+        The response must be a human-like conversation that is easy to understand by college students.
         You receive a response from the document_search_agent, and you should reformat it into a conversational response that is clear for college students.
 
         If the document_search_agent returns:
@@ -466,6 +467,9 @@ class ConversationAgent:
         4️⃣ Make sure all the information is clear and easy to understand. Your response should be matched at least 80% with the original document.
         5️⃣ Give as much detailed information as possible, but do not make it too long.
         6️⃣ Always include the reference to the source.
+        
+        **Question:**
+        {question}
         
         **Document Search Response:**
         {document_response}
@@ -507,7 +511,6 @@ class ConversationAgent:
         return reformated_response
     
     
-    #!########### PENDING CHECK ############
     def handle_cross_agent_request(self, cross_check_request, document, question):
         """
         Handles the cross-check request
@@ -517,7 +520,8 @@ class ConversationAgent:
         """
         
         handle_cross_check_prompt = f"""
-        You are an intelligent and helpful summary agent that reformats the response from the document_search_agent into a human-like conversation that is easy to understand by college students.
+        You are an intelligent and helpful summary agent that reformats the response from the document_search_agent based on the student's query
+        The response must be a human-like conversation that is easy to understand by college students.
         You receive a request from the cross_check_agent, with a document and student's query, you need to revise the previous generated summary response which was not matched with the document search.
 
         Example message from the cross_check_agent:
@@ -553,11 +557,12 @@ class ConversationAgent:
         **Cross Check Request:**
         {cross_check_request}
         
+        **Question: **
+        {question}
+        
         **Document: **
         {document}
         
-        **Question: **
-        {question}
 
         Return the reformatted response in the exact format below:
 
