@@ -17,7 +17,7 @@ class ConversationAgent:
     local_tokenizer = None
     local_model = None
     
-    def __init__(self, max_tokens=1028, temperature=0.5):
+    def __init__(self, max_tokens=512, temperature=0.5):
         # Initialize the LLM Model
         # print("Loading local model...")
         # print(self.__class__.local_model, self.__class__.local_tokenizer)
@@ -68,7 +68,7 @@ class ConversationAgent:
                 tokenizer=self.__class__.local_tokenizer,
                 device_map="auto"
             )
-            self.llm = HuggingFacePipeline(pipeline=self.llm_model, pipeline_kwargs={"temperature": self.temperature, "max_new_tokens": 8000})
+            self.llm = HuggingFacePipeline(pipeline=self.llm_model, pipeline_kwargs={"max_new_tokens": self.max_tokens, "temperature": self.temperature})
             self.chat = ChatHuggingFace(llm=self.llm, verbose=True)
 
     def classify_inquiry_for_decision(self, user_input):
@@ -103,12 +103,8 @@ class ConversationAgent:
                 Revised Inquiry: None
                 Reason for Revision: None
                 
-                Question: "What is the color of the sky?"
-                Answer: 
+                Other unrelated questions: "What is the color of the sky?", "What is the capital of Canada?", "What is the population of Toronto?"
                 Category: None
-                Reason: The inquiry is not related to international students or Canadian Immigration.
-                Revised Inquiry: None
-                Reason for Revision: None
         ❌ Ignore and classify as 'None' any inquiry related to general immigration, Express Entry, CRS score, work permits (except PGWP), or any topic unrelated to international students.
         ❌ Ignore and classify as 'None' any inquiry about general knowledge, technology, politics, business, or any topic outside IRCC international student matters.
         2️⃣ ✅ Any meaningful inquiry mentioning "IRCC" must ALWAYS be classified as 'decision_agent' if it relates to international students.
@@ -117,6 +113,12 @@ class ConversationAgent:
         5️⃣ ❌ If the inquiry is clearly NOT related to international students, classify it as 'None' and do not respond.
         6️⃣ ❓ If the question is related to IRCC but is unclear or lacks important details, which means it is too broad based on your thoughts, classify it as 'general' and ask the user for clarification, do not answer directly.
         7️⃣ ❓ About greeting messages, for example, "Hello", "How are you?", you should answer like "I'm here to help you with your questions about international students and immigration."
+        8️⃣ ✅ If the inquiry grammatically incorrect, revise it to be grammatically correct.
+        9️⃣ ✅ Revise the inquiry means to add missing keywords to the inquiry to make it clear and understandable, and keep the meaning of the inquiry the same.
+        10 ❌ DO NOT add any additional content to the revised inquiry section that changes the meaning of the inquiry.
+            Example:
+            User Inquiry: "when should I apply for work permit?"
+            Revised Inquiry: "When should I apply for a post-graduation work permit?"
 
 
 
@@ -418,7 +420,7 @@ class ConversationAgent:
                     raise ValueError("Reformatted response could not be extracted at crs_agent.")
         return reformated_response
     
-    def handle_document_search_request(self, document_response):
+    def handle_document_search_request(self, document_response, question):
         """
         Handles the document search response
         
@@ -427,7 +429,8 @@ class ConversationAgent:
         2. If the document is not found, ask the user to clarify the question
         """
         handle_document_search_prompt = f"""
-        You are an intelligent and helpful summary agent that reformats the response from the document_search_agent into a human-like conversation that is easy to understand by college students.
+        You are an intelligent and helpful summary agent that reformats the response from the document_search_agent based on the student's query
+        The response must be a human-like conversation that is easy to understand by college students.
         You receive a response from the document_search_agent, and you should reformat it into a conversational response that is clear for college students.
 
         If the document_search_agent returns:
@@ -464,6 +467,9 @@ class ConversationAgent:
         4️⃣ Make sure all the information is clear and easy to understand. Your response should be matched at least 80% with the original document.
         5️⃣ Give as much detailed information as possible, but do not make it too long.
         6️⃣ Always include the reference to the source.
+        
+        **Question:**
+        {question}
         
         **Document Search Response:**
         {document_response}
@@ -505,7 +511,6 @@ class ConversationAgent:
         return reformated_response
     
     
-    #!########### PENDING CHECK ############
     def handle_cross_agent_request(self, cross_check_request, document, question):
         """
         Handles the cross-check request
@@ -515,7 +520,8 @@ class ConversationAgent:
         """
         
         handle_cross_check_prompt = f"""
-        You are an intelligent and helpful summary agent that reformats the response from the document_search_agent into a human-like conversation that is easy to understand by college students.
+        You are an intelligent and helpful summary agent that reformats the response from the document_search_agent based on the student's query
+        The response must be a human-like conversation that is easy to understand by college students.
         You receive a request from the cross_check_agent, with a document and student's query, you need to revise the previous generated summary response which was not matched with the document search.
 
         Example message from the cross_check_agent:
@@ -551,11 +557,12 @@ class ConversationAgent:
         **Cross Check Request:**
         {cross_check_request}
         
+        **Question: **
+        {question}
+        
         **Document: **
         {document}
         
-        **Question: **
-        {question}
 
         Return the reformatted response in the exact format below:
 

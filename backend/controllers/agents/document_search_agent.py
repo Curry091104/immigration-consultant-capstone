@@ -2,6 +2,7 @@ import sys
 import os
 
 sys.path.append(os.path.join(os.getcwd()))
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..'))
 
 from config.mypinecone import MyPinecone
 import json
@@ -22,7 +23,7 @@ class DocumentSearchAgent:
         output_search = json.loads(found_docs.body)
         answers = []
         for match in output_search['results']['matches']:
-            if match['score'] > 0.51:
+            if match['score'] > 0.65:
                 answers.append(match.get('metadata'))
             else:
                 continue

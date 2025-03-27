@@ -38,6 +38,9 @@ def main_content():
             background-image: url('data:image/png;base64,{background}');
             background-repeat: no-repeat;
             background-attachment: fixed;
+            background-size: cover;
+            background-position: center;
+            min-height: 100vh;
             height: 100vh;
         }}
         </style>
@@ -45,13 +48,15 @@ def main_content():
     html_code = f"""
         <!-- Logo Section -->
         <div style="display: flex; justify-content: center; align-items: center; flex-shrink: 0;">
-            <img src="data:image/png;base64,{logo}" style="width: 250px; height: 250px; margin-top: 10px;">
+            <img src="data:image/png;base64,{logo}" style="width: 250px; height: 250px; margin-top: 0px;">
         </div>
         <!-- Chat Now Button -->
         <div class="container">
-            <h1 style="font-family: 'Calistoga', cursive; font-size: 3em; color: white; margin-top: 30px;">Hi there,</h1>
             <form action="http://localhost:8501/Get_Consultation_with_IRIS">
-                <button class="chat-now-btn" type="submit">Chat Now</button>
+                <button class="chat-now-btn" type="submit">
+                <p>Chat Now</p>
+                <p style="size:12px;">Discutons Maintenant</p>
+                </button>
             </form>
         </div>
     """

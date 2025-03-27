@@ -6,20 +6,34 @@
 }
 .chat-now-btn {
     position: relative;
-    margin: 50px;
+    margin: 30px;
     width: 400px;
     height: 100px;
-    background-image: linear-gradient(rgba(116, 245, 241, 0.2),#ff030300);
+    background-image: linear-gradient(rgba(116, 245, 241, 0.2),#fa727252);
     border-radius: 60px;
     color: black;
     cursor: pointer;
     font-family: 'Calistoga', cursive;
-    font-size: 2em;
     font-weight: bold;
     overflow: hidden;
 }
+
+.chat-now-btn p {
+    margin: 0;
+    text-align: center;
+}
+
+.chat-now-btn p:first-child {
+    font-size: 32px;
+    font-weight: bold;
+}
+
+.chat-now-btn p:last-child {
+    font-size: 14px;
+    margin-top: 5px;
+}
+
 .chat-now-btn:hover {
-    color: #ff0501b7;
-    background-image: linear-gradient(rgba(107, 168, 255, 0.2),#89000000);
+    background-image: linear-gradient(#d84a4a40, rgba(157, 247, 252, 0.347));
 }
 
