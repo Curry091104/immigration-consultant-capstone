@@ -15,7 +15,7 @@ from controllers.faq_kmeans import cluster_faqs_pipeline, get_total_unclustered_
 router = APIRouter(prefix="/api")
 
 @router.post("/create-faq")
-def create_faq(request: Request, faq_docs: List[dict] = Body(...), mongo_db_faq_ids: List[str] = Body([]), index_name: str = Body('faqs'), x_api_key: str = Depends(validate_admin_api_key)):
+async def create_faq(request: Request, faq_docs: List[dict] = Body(...), mongo_db_faq_ids: List[str] = Body([]), index_name: str = Body('faqs'), x_api_key: str = Depends(validate_admin_api_key)):
     if not x_api_key:
         return JSONResponse({'error': 'Invalid API Key'}, status_code=401)
     token = request.cookies.get('access_token')
@@ -26,7 +26,7 @@ def create_faq(request: Request, faq_docs: List[dict] = Body(...), mongo_db_faq_
         pinecone = MyPinecone()
         response = pinecone.insert_data(index_name, langchain_faq_docs)
         if mongo_db_faq_ids:
-            delete_db(mongo_db_faq_ids)
+            await delete_db(mongo_db_faq_ids)
         return response
     except Exception as e:
         return JSONResponse({'error': str(e)}, status_code=500)
