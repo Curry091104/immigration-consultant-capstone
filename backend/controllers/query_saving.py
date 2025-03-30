@@ -29,8 +29,50 @@ async def save_query(query: HistoryQuery):
     except Exception as e:
         return {"error": str(e)}
     
+async def get_queries_clustered_by_category(category: str):
+    """
+    This function gets the queries that are clustered by category.
+    """
+    try:
+        history_query_collection = get_history_query_collection()
+        queries = await history_query_collection.find({"category": category, "clustered": True}).to_list(length=100)
+        return queries
     
-#### Test the function ####
+    except Exception as e:
+        return {"error": str(e)}
+
+async def get_queries_unclustered_by_category(category: str):
+    """
+    This function gets the queries that are not clustered by category.
+    """
+    try:
+        history_query_collection = get_history_query_collection()
+        queries = await history_query_collection.find({"category": category, "clustered": False}).to_list(length=100)
+        return queries
+    
+    except Exception as e:
+        return {"error": str(e)}
+    
+async def update_queries(ids: list, clustered: bool):
+    try:
+        history_query_collection = get_history_query_collection()
+        for id in ids:
+            await history_query_collection.update_one({"_id": id}, {"$set": {"clustered": clustered}})
+        return {"message": "Queries updated successfully"}
+    except Exception as e:
+        return {"error": str(e)}
+    
+async def delete_queries(ids: list):
+    try:
+        history_query_collection = get_history_query_collection()
+        for id in ids:
+            await history_query_collection.delete_one({"_id": id})
+        return {"message": "Queries deleted successfully"}
+    except Exception as e:
+        return {"error": str(e)}
+    
+    
+####! Test the function ####
 # if __name__ == "__main__":
 #     import asyncio
     

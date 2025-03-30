@@ -19,19 +19,30 @@ def upload_faq_page():
     
 def get_user_inputs():
     faq_docs = []
+    if 'clustered_query' in st.session_state and st.session_state.clustered_query:
+        st.session_state.num_questions = len(st.session_state.faq_kmeans_docs[0]["questions"])
     for i in range(st.session_state.num_questions):
         faq_doc = {}
         with st.expander(f"Question {i + 1}", expanded=True):
             faq_doc_key = f"faq_{i}"
             
             if faq_doc_key not in st.session_state:
-                st.session_state[faq_doc_key] = {
-                    "categories": "",
-                    "faq_id": "",
-                    "question": "",
-                    "answer": "",
-                    "hyperlinks": []
-                }
+                if st.session_state.clustered_query == False:
+                    st.session_state[faq_doc_key] = {
+                        "categories": "",
+                        "faq_id": "",
+                        "question": "",
+                        "answer": "",
+                        "hyperlinks": []
+                    }
+                else:
+                    st.session_state[faq_doc_key] = {
+                        "categories": str(st.session_state.faq_kmeans_docs[0]["category"]).strip(),
+                        "faq_id": "",
+                        "question": str(st.session_state.faq_kmeans_docs[0]["questions"][i]).strip(),
+                        "answer": "",
+                        "hyperlinks": []
+                    }
             
             
             st.session_state[faq_doc_key]["categories"] = st.text_input("Categories *:", st.session_state[faq_doc_key]["categories"], key=f"categories_{i}")
@@ -43,7 +54,7 @@ def get_user_inputs():
                 st.session_state[faq_doc_key]["num_hyperlinks"] = 1
             
             st.write("Hyperlink:")
-            c1, c2 = st.columns([1, 25])
+            c1, c2 = st.columns([1, 15]) # Adjust the width of the columns as needed
             c1.button("Add", on_click=partial(handle_add_hyperlink_click, faq_doc_key), key=f"add_hyperlink_{i}")
             if st.session_state[faq_doc_key]["num_hyperlinks"] > 1:
                 c2.button("Remove", on_click=partial(handle_remove_hyperlink_click, faq_doc_key), key=f"remove_hyperlink_{i}")
@@ -70,7 +81,7 @@ def get_user_inputs():
         faq_docs.append(faq_doc)
         
         
-    col1, col2 = st.columns([1, 12]) 
+    col1, col2 = st.columns([1, 7]) # Adjust the width of the columns as needed
     col1.button("Add question", on_click=handle_add_question_click)
     if st.session_state.num_questions > 1:
         col2.button("Remove question", on_click=handle_remove_question_click)
@@ -79,6 +90,14 @@ def get_user_inputs():
 def initialize_session_state():
     if 'num_questions' not in st.session_state:
         st.session_state.num_questions = 1
+    if 'clustered_query' not in st.session_state:
+        st.session_state.clustered_query = False
+    if 'faq_kmeans_docs' not in st.session_state:
+        st.session_state.faq_kmeans_docs = []
+    if 'num_unclustered_queries' not in st.session_state:
+        st.session_state.num_unclustered_queries = 0
+    if 'category' not in st.session_state:
+        st.session_state.category = ""
     
     
 def on_submit(faq_docs):
@@ -92,7 +111,10 @@ def on_submit(faq_docs):
     session = session_manager.get_session()
     token = session.cookies.get_dict().get("access_token")
     x_api_key = os.getenv("ADMIN_API_KEY")
-    response = session.post("http://localhost:8000/api/create-faq", json={"faq_docs": faq_docs}, headers={"x-api-key": x_api_key}, cookies={"access_token": token})
+    if st.session_state.clustered_query == False:
+        response = session.post("http://localhost:8000/api/create-faq", json={"faq_docs": faq_docs}, headers={"x-api-key": x_api_key}, cookies={"access_token": token})
+    else:
+        response = session.post("http://localhost:8000/api/create-faq", json={"faq_docs": faq_docs, "mongo_db_faq_ids": st.session_state.faq_kmeans_docs[0]["ids"]}, headers={"x-api-key": x_api_key}, cookies={"access_token": token})
     if response.status_code == 201:
         success_msg = st.success("FAQs uploaded successfully")
         time.sleep(2)
@@ -126,4 +148,4 @@ def go_back():
         if i.startswith("faq_"):
             st.session_state.pop(i)
             
-    st.session_state.page = ADMIN_DASHBOARD
+    st.session_state.page = FAQ_OPTIONS_PAGE
