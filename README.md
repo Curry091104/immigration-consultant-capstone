@@ -21,7 +21,6 @@ git clone https://github.com/Curry091104/immigration-consultant-capstone.git
 
 <b><i>2. Install dependencies: </i></b>
 
-> ** Note **
 > - Python version must be 3.11 (if your Python version is 3.12, please downgrade or create a new environment in Anaconda with Python 3.11. Check this [link](https://docs.conda.io/projects/conda/en/stable/user-guide/tasks/manage-environments.html#creating-an-environment-with-commands) for creating an environment with a specific version of Python).
 > - It's recommended to create separate virtual environment folders for both the frontend and backend to prevent dependency conflicts.
 > - To leverage GPU, after running ```pip install -r requirements.txt```, please run a command to reinstall PyTorch. Check this [link](https://pytorch.org/get-started/locally/) for the installation command.
@@ -41,7 +40,6 @@ pip install -r requirements.txt
 ### Usage
 To run the project, use the following command: </br></br>
 
-> ** Note **
 > - Ensure that your environment is activated before running the command.
 > - Verify that you have a .env file with all required keys.
 
