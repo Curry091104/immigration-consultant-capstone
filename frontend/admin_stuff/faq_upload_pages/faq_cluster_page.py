@@ -35,8 +35,7 @@ def get_user_inputs():
         on_change=on_change,
         key="category"
     )
-    
-    st.write(f"Selected category: {category}")
+
     st.write(f"Total number of unprocessed queries: {st.session_state.num_unclustered_queries}")
     
     st.button(
@@ -57,10 +56,12 @@ def on_change():
     session = session_manager.get_session()
     token = session.cookies.get_dict().get("access_token")
     x_api_key = os.getenv("ADMIN_API_KEY")
-    response = session.get(
-        f'http://localhost:8000/api/faqs/total-number-unclustered-queries?category={category}',
-        headers={"x-api-key": x_api_key}, cookies={"access_token": token}
-    )
+    
+    with st.spinner("Please wait..."):
+        response = session.get(
+            f'http://localhost:8000/api/faqs/total-number-unclustered-queries?category={category}',
+            headers={"x-api-key": x_api_key}, cookies={"access_token": token}
+        )
     if response.status_code == 200:
         data = response.json()
         st.session_state.num_unclustered_queries = data.get("total_unclustered_queries", 0)
@@ -68,6 +69,16 @@ def on_change():
 def on_submit(category):
     if category == "":
         error_msg = st.error("Please select a category.")
+        time.sleep(3)
+        error_msg.empty()
+        return
+    if st.session_state.num_unclustered_queries == 0:
+        error_msg = st.error("No unclustered queries available.")
+        time.sleep(3)
+        error_msg.empty()
+        return
+    if st.session_state.num_unclustered_queries < 2:
+        error_msg = st.error("Not enough unclustered queries available.")
         time.sleep(3)
         error_msg.empty()
         return

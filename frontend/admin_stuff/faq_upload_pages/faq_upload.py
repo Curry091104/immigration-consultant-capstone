@@ -43,7 +43,12 @@ def get_user_inputs():
                         "answer": "",
                         "hyperlinks": []
                     }
-            
+            if st.session_state.clustered_query == True:
+                st.button(
+                    "🗑️Remove",
+                    on_click=partial(on_remove_doc, faq_doc_key, i),
+                    key=f"remove_doc_faq_{i}"
+                )
             
             st.session_state[faq_doc_key]["categories"] = st.text_input("Categories *:", st.session_state[faq_doc_key]["categories"], key=f"categories_{i}")
             st.session_state[faq_doc_key]["faq_id"] = st.text_input("Faq ID *:", st.session_state[faq_doc_key]["faq_id"], key=f"faq_id_{i}")
@@ -80,11 +85,11 @@ def get_user_inputs():
         faq_doc["hyperlinks"] = st.session_state[faq_doc_key]["hyperlinks"]
         faq_docs.append(faq_doc)
         
-        
-    col1, col2 = st.columns([1, 7]) # Adjust the width of the columns as needed
-    col1.button("Add question", on_click=handle_add_question_click)
-    if st.session_state.num_questions > 1:
-        col2.button("Remove question", on_click=handle_remove_question_click)
+    if st.session_state.clustered_query == False:
+        col1, col2 = st.columns([1, 7]) # Adjust the width of the columns as needed
+        col1.button("Add question", on_click=handle_add_question_click)
+        if st.session_state.num_questions > 1:
+            col2.button("Remove question", on_click=handle_remove_question_click)
         
     st.button("Submit", on_click=lambda: on_submit(faq_docs))
 def initialize_session_state():
@@ -142,6 +147,25 @@ def handle_remove_hyperlink_click(faq_index):
     if st.session_state[faq_index]["num_hyperlinks"] > 1:
         st.session_state[faq_index]["num_hyperlinks"] -= 1
     
+def on_remove_doc(doc_key, index_in_faq_kmeans_docs):
+    if doc_key not in st.session_state:
+        st.warning("Document not found in session state.")
+        return
+    
+    del st.session_state[doc_key]
+    
+    if 'faq_kmeans_docs' in st.session_state and len(st.session_state.faq_kmeans_docs) > 0:
+        if index_in_faq_kmeans_docs < len(st.session_state.faq_kmeans_docs[0]["questions"]):
+            st.session_state.faq_kmeans_docs[0]["questions"].pop(index_in_faq_kmeans_docs)
+                
+    if st.session_state.faq_kmeans_docs[0]["questions"] == []:
+        st.session_state.num_questions = 1
+        st.session_state.clustered_query = False
+        st.session_state.faq_kmeans_docs = []
+        st.session_state.category = ""
+        st.session_state.num_unclustered_queries = 0
+        st.session_state.page = FAQ_CLUSTER_PAGE
+        
 def go_back():
     st.session_state.num_questions = 1
     for i in st.session_state.keys():

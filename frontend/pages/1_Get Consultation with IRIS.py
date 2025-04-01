@@ -153,13 +153,22 @@ async def get_iris_response(input):
             # Clean up response
             response = re.sub(r'(?<!\n)\n(?!\n)', '\n\n', response)
             response = re.sub(r'(?<!\\n)\\n(?!\\n)', '\\n\\n', response)
+            
+            # Remove unintended spaces before line breaks
+            response = re.sub(r'\s*\n\s*', '\n', response)
+            response = re.sub(r'\s*\\n\s*', '\\n', response)
 
             # Remove surrounding quotes if present
             response = response.strip('"')
+            
+            # Remove context after ```, if present
+            response = re.sub(r'```.*?$', '', response, flags=re.DOTALL)
 
             # Remove triple backticks (```), often used in code blocks
-            response = response.replace("```", "")
-            response = response.strip()
+            response = re.sub(r"\s*```+\s*", " ", response).strip()
+            
+            # Ensure that "Reference:" is followed by a newline
+            response = re.sub(r'(\n)(Reference:)', r'\1\n\2', response)
             return response
         
 

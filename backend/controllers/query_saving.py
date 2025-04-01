@@ -4,6 +4,7 @@ Any querries that are not matched with the existing FAQs are saved in the databa
 """
 import os
 import sys
+from bson import ObjectId
 
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
@@ -57,7 +58,10 @@ async def update_queries(ids: list, clustered: bool):
     try:
         history_query_collection = get_history_query_collection()
         for id in ids:
-            await history_query_collection.update_one({"_id": id}, {"$set": {"clustered": clustered}})
+            # Convert string ID to ObjectId
+            if isinstance(id, str):
+                object_id = ObjectId(id)
+            await history_query_collection.update_one({"_id": object_id}, {"$set": {"clustered": clustered}})
         return {"message": "Queries updated successfully"}
     except Exception as e:
         return {"error": str(e)}
@@ -66,7 +70,10 @@ async def delete_queries(ids: list):
     try:
         history_query_collection = get_history_query_collection()
         for id in ids:
-            await history_query_collection.delete_one({"_id": id})
+            # Convert string ID to ObjectId
+            if isinstance(id, str):
+                object_id = ObjectId(id)
+            await history_query_collection.delete_one({"_id": object_id})
         return {"message": "Queries deleted successfully"}
     except Exception as e:
         return {"error": str(e)}
