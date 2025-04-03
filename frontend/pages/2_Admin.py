@@ -11,6 +11,8 @@ from admin_stuff.pdf_upload_pages.edit_extracted_pdf_page import edit_extracted_
 from admin_stuff.account_mgnt_page.acc_mgnt_page import account_mgnt_page
 from admin_stuff.security_pages.change_password_page import security_page
 from admin_stuff.faq_upload_pages.faq_upload import upload_faq_page
+from admin_stuff.faq_upload_pages.faq_options_page import faq_options_page
+from admin_stuff.faq_upload_pages.faq_cluster_page import faq_cluster_page
 from auth.user_authentication import on_logout
 from streamlit_session_browser_storage import SessionStorage
 from screens import *
@@ -39,6 +41,10 @@ def admin_run():
             security_page()
         elif st.session_state.page == SIGNUP_PAGE:
             signup_page()
+        elif st.session_state.page == FAQ_OPTIONS_PAGE:
+            faq_options_page()
+        elif st.session_state.page == FAQ_CLUSTER_PAGE:
+            faq_cluster_page()
         st.sidebar.button(
             "🚪Logout", 
             on_click=on_logout
@@ -92,7 +98,7 @@ def admin_dashboard():
             card(
                 title = "Upload FAQ",
                 text = "",
-                on_click = lambda: on_card_click(UPLOAD_FAQ_PAGE),
+                on_click = lambda: on_card_click(FAQ_OPTIONS_PAGE),
             )
             
         p3, p4 = st.columns(2)

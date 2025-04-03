@@ -11,7 +11,7 @@ app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "https://localhost:3000", "http://localhost:8501", "https://localhost:8501"],
+    allow_origins=["http://localhost:8501", "https://localhost:8501"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -27,7 +27,7 @@ mongo_client = AsyncIOMotorClient(MONGO_URI)
     
 @app.on_event("shutdown")
 def close_connection():
-    print("Closing connection")
+    print("Closing MongoDB connection...")
     mongo_client.close()
 
 @app.get("/")
