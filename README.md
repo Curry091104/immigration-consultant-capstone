@@ -42,18 +42,17 @@ To run the project, use the following command: </br></br>
 
 > - Ensure that your environment is activated before running the command.
 > - Verify that you have a .env file with all required keys.
-
-
-Frontend
-```
-cd frontend
-streamlit run Home.py
-```
+> - Run the backend (server) first and let it finish loading, then run the frontend (client).
 
 Backend
 ```
 cd backend
 uvicorn main:app
+```
+Frontend
+```
+cd frontend
+streamlit run Home.py
 ```
 
 ### Contributors
