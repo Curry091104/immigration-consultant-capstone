@@ -55,7 +55,7 @@ def main_content():
             <form action="http://localhost:8501/Get_Consultation_with_IRIS">
                 <button class="chat-now-btn" type="submit">
                 <p>CHAT NOW</p>
-                <p style="size:12px;">Discutons Maintenant</p>
+                <p>Discutons Maintenant</p>
                 </button>
             </form>
         </div>

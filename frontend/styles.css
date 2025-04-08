@@ -7,16 +7,17 @@
 .chat-now-btn {
     position: relative;
     margin: 30px;
-    width: 400px;
+    width: 300px;
     height: 100px;
-    background-image: linear-gradient(#B5D9EE,white);
+    background-image: linear-gradient(#1699ea,rgb(255, 255, 255));
     border-radius: 60px;
     color: white;
     cursor: pointer;
     font-family: 'Calistoga', cursive;
     font-weight: bold;
     overflow: hidden;
-    border: white 2px solid;
+    border: white 3px solid;
+
 }
 
 .chat-now-btn p {
@@ -25,16 +26,18 @@
 }
 
 .chat-now-btn p:first-child {
-    font-size: 32px;
+    padding-top: 18px;
+    font-size: 28px;
     font-weight: bold;
 }
 
 .chat-now-btn p:last-child {
     font-size: 14px;
-    margin-top: 5px;
+    padding-bottom: 5px;
+    font-weight: normal;
+    color: #44aff1
 }
 
-.chat-now-btn:hover {
-    background-image: linear-gradient(#d84a4a40, rgba(157, 247, 252, 0.347));
+.chat-now-btn:hover p:first-child {
+    color: #009dff;
 }
-
