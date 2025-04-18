@@ -10,7 +10,26 @@
 
 ### Project Description
 
-> Pend.
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/def87a39-ee15-4681-8d68-2c6a364823b4" alt="Image description" width="250"/>
+</p>
+
+**IRIS (Immigration Resources for International Students)** is a full-stack, AI-driven chatbot developed as part of our capstone project at **Centennial College**. Designed to support international students in Canada, IRIS provides real-time, accurate immigration guidance by simplifying complex IRCC (Immigration, Refugees and Citizenship Canada) policies into accessible conversations.
+
+International students often struggle to navigate legal documents, frequent policy updates, and long support wait times. IRIS addresses this gap by offering a reliable, user-friendly solution available 24/7.
+
+**🔍 Key Features**
+- **Large Language Model Integration (LLMs):** Delivers conversational, human-like responses to help users understand complex immigration terms and scenarios.
+- **Retrieval-Augmented Generation (RAG):** Ensures answers are grounded in the most up-to-date IRCC policy documents stored in a custom, searchable vector database.
+- **Multi-Agent System with LangGraph:** Applies agentic AI principles to autonomously manage tasks such as document retrieval, question answering, and dialogue flow—minimizing human intervention.
+- **Dynamic Admin Panel:** Enables authorized staff to update policies and documentation in real time, ensuring accuracy and compliance as IRCC guidelines evolve.
+
+**🛠️ Tech Stack**
+- 🖥️ Streamlit – Frontend interface for chatbot and admin panel
+- ⚡ FastAPI – High-performance backend API framework
+- 🧲 Pinecone – Vector similarity search for document retrieval (RAG)
+- 🍃 MongoDB – NoSQL database for storing user queries, sessions, and logs
+- 🤗 Hugging Face – Pretrained LLMs for natural language understanding and response generation
 
 ### Installation
 <b><i>1. Clone the repository: </i></b>
